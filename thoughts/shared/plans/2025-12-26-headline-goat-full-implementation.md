@@ -503,19 +503,19 @@ tests/
 ## Success Criteria
 
 ### Automated Verification:
-- [ ] `go mod tidy` succeeds
-- [ ] `go build ./cmd/headline-goat` produces binary
-- [ ] `go test ./... -v -race` passes all tests
-- [ ] `go vet ./...` reports no issues
-- [ ] `./headline-goat init test1 --variants "A" "B"` creates test
-- [ ] `./headline-goat init test2 --variants "A" "B" --goal "Button click"` stores goal
-- [ ] `./headline-goat list` shows the tests
-- [ ] `./headline-goat serve` starts and `/health` returns 200
+- [x] `go mod tidy` succeeds
+- [x] `go build ./cmd/headline-goat` produces binary
+- [x] `go test ./... -v -race` passes all tests
+- [x] `go vet ./...` reports no issues
+- [x] `./headline-goat init test1 --variants "A" "B"` creates test
+- [x] `./headline-goat init test2 --variants "A" "B" --goal "Button click"` stores goal
+- [x] `./headline-goat list` shows the tests
+- [x] `./headline-goat serve` starts and `/health` returns 200
 
 ### Manual Verification:
-- [ ] Binary runs on target platform without errors
-- [ ] Database file created in expected location
-- [ ] Health endpoint returns accurate test count
+- [x] Binary runs on target platform without errors
+- [x] Database file created in expected location
+- [x] Health endpoint returns accurate test count
 
 ---
 
@@ -636,17 +636,17 @@ tests/
 ## Success Criteria
 
 ### Automated Verification:
-- [ ] `go test ./... -v -race` passes
-- [ ] POST to `/b` with valid payload returns 204
-- [ ] POST to `/b` with invalid test returns 400
-- [ ] GET `/t/testname.js` returns valid JavaScript
-- [ ] GET `/t/nonexistent.js` returns 404
-- [ ] Duplicate events are not double-counted
+- [x] `go test ./... -v -race` passes
+- [x] POST to `/b` with valid payload returns 204
+- [x] POST to `/b` with invalid test returns 400
+- [x] GET `/t/testname.js` returns valid JavaScript
+- [x] GET `/t/nonexistent.js` returns 404
+- [x] Duplicate events are not double-counted
 
 ### Manual Verification:
-- [ ] JavaScript loads in browser without errors
-- [ ] Beacon sends successfully from browser
-- [ ] Events appear in database after page view
+- [x] JavaScript loads in browser without errors
+- [x] Beacon sends successfully from browser
+- [x] Events appear in database after page view
 
 ### Integration Pattern Support
 
@@ -780,12 +780,12 @@ tests/
 ## Success Criteria
 
 ### Automated Verification:
-- [ ] `go test ./... -v -race` passes
-- [ ] Wilson interval matches expected values for known inputs
-- [ ] Significance test correctly identifies winner at 95%
-- [ ] `results` command outputs formatted table
-- [ ] `export --format csv` produces valid CSV
-- [ ] `export --format json` produces valid JSON
+- [x] `go test ./... -v -race` passes
+- [x] Wilson interval matches expected values for known inputs
+- [x] Significance test correctly identifies winner at 95%
+- [x] `results` command outputs formatted table
+- [x] `export --format csv` produces valid CSV
+- [x] `export --format json` produces valid JSON
 
 ### Manual Verification:
 - [ ] Results display is readable and correctly formatted
