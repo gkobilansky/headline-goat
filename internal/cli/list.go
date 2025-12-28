@@ -38,7 +38,8 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(tests) == 0 {
-		fmt.Println("No tests found. Create one with: headline-goat init <name> --variants \"A\" \"B\"")
+		fmt.Println("No tests found.")
+		fmt.Println("Tests auto-create when beacon data arrives. Add headline-goat to your site to start.")
 		return nil
 	}
 

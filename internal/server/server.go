@@ -38,7 +38,7 @@ func (s *Server) setupRoutes() {
 	// Public endpoints
 	s.router.HandleFunc("/health", s.handleHealth)
 	s.router.HandleFunc("/b", s.handleBeacon)
-	s.router.HandleFunc("/t/", s.handleClientJS)
+	s.router.HandleFunc("/ht.js", s.handleGlobalJS)
 
 	// Dashboard endpoints (protected)
 	s.router.Handle("/dashboard", s.authMiddleware(http.HandlerFunc(s.handleDashboard)))
@@ -47,6 +47,15 @@ func (s *Server) setupRoutes() {
 }
 
 func (s *Server) Start() error {
+	return s.StartWithOptions(true)
+}
+
+// StartQuiet starts the server without printing startup messages
+func (s *Server) StartQuiet() error {
+	return s.StartWithOptions(false)
+}
+
+func (s *Server) StartWithOptions(printMessages bool) error {
 	// Write token to file for OTP command
 	if s.tokenFile != "" {
 		if err := os.WriteFile(s.tokenFile, []byte(s.token), 0600); err != nil {
@@ -55,15 +64,14 @@ func (s *Server) Start() error {
 	}
 
 	addr := fmt.Sprintf(":%d", s.port)
-	fmt.Println()
-	fmt.Printf("headline-goat running on http://localhost:%d\n", s.port)
-	fmt.Println()
-	fmt.Printf("Dashboard: http://localhost:%d/dashboard?token=%s\n", s.port, s.token)
-	fmt.Println()
-	fmt.Println("To create a new test, open another terminal and run:")
-	fmt.Println("  headline-goat init")
-	fmt.Println()
-	fmt.Println("Press Ctrl+C to stop")
+
+	if printMessages {
+		fmt.Println()
+		fmt.Printf("headline-goat running on http://localhost:%d\n", s.port)
+		fmt.Printf("Dashboard: http://localhost:%d/dashboard?token=%s\n", s.port, s.token)
+		fmt.Println()
+		fmt.Println("Press Ctrl+C to stop")
+	}
 
 	return http.ListenAndServe(addr, s.router)
 }

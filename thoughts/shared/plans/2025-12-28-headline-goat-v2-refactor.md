@@ -187,15 +187,15 @@ go build -o headline-goat ./cmd/headline-goat
 
 ### Phase 1 Success Criteria
 
-- [ ] `go test ./... -v -race` passes
-- [ ] `/ht.js` returns valid JavaScript
-- [ ] Script correctly finds and processes data attributes
-- [ ] Script sends view beacons
-- [ ] Script handles convert clicks
-- [ ] `./headline-goat` starts server and shows instructions
-- [ ] Old `/t/<test>.js` endpoint removed
-- [ ] `snippet` command removed
-- [ ] `serve` command removed
+- [x] `go test ./... -v -race` passes
+- [x] `/ht.js` returns valid JavaScript
+- [x] Script correctly finds and processes data attributes
+- [x] Script sends view beacons
+- [x] Script handles convert clicks
+- [x] `./headline-goat` starts server and shows instructions
+- [x] Old `/t/<test>.js` endpoint removed
+- [x] `snippet` command removed
+- [x] `serve` command removed
 
 ---
 

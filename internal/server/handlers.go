@@ -3,10 +3,8 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -129,72 +127,3 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) handleClientJS(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Parse test name from path: /t/<test>.js
-	path := r.URL.Path
-	if !strings.HasPrefix(path, "/t/") || !strings.HasSuffix(path, ".js") {
-		http.NotFound(w, r)
-		return
-	}
-
-	testName := strings.TrimSuffix(strings.TrimPrefix(path, "/t/"), ".js")
-	if testName == "" {
-		http.NotFound(w, r)
-		return
-	}
-
-	ctx := context.Background()
-	test, err := s.store.GetTest(ctx, testName)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-
-	// Generate JavaScript
-	variantsJSON, _ := json.Marshal(test.Variants)
-
-	// Determine server URL from request
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
-	}
-	serverURL := fmt.Sprintf("%s://%s", scheme, r.Host)
-
-	js := generateClientJS(testName, string(variantsJSON), serverURL)
-
-	w.Header().Set("Content-Type", "application/javascript")
-	w.Header().Set("Cache-Control", "public, max-age=60")
-	w.Write([]byte(js))
-}
-
-func generateClientJS(testName, variantsJSON, serverURL string) string {
-	return fmt.Sprintf(`(function(){
-  var T='%s',V=%s,K='ht_'+T;
-  var d=localStorage,i=d[K],vid=d['ht_vid'];
-  if(!vid){vid=Math.random().toString(36).slice(2);d['ht_vid']=vid}
-  if(i==null){i=Math.random()*V.length|0;d[K]=i}else{i=+i}
-
-  var el=document.querySelector('[data-ht="'+T+'"]');
-  if(el)el.textContent=V[i];
-
-  document.querySelectorAll('[data-ht-convert="'+T+'"]').forEach(function(e){
-    e.addEventListener('click',function(){C()});
-  });
-
-  var S='%s';
-  function B(e){navigator.sendBeacon(S+'/b',JSON.stringify({t:T,v:i,e:e,vid:vid}))}
-  function C(){B('convert')}
-
-  B('view');
-
-  window.HT=window.HT||{};
-  window.HT.convert=window.HT.convert||{};
-  window.HT[T]=C;
-  window.HT.convert[T]=C;
-})();`, testName, variantsJSON, serverURL)
-}

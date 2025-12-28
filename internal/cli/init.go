@@ -1,95 +1,55 @@
 package cli
 
 import (
-	"context"
 	"fmt"
-	"math"
 	"os"
-	"regexp"
+	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/headline-goat/headline-goat/internal/server"
 	"github.com/headline-goat/headline-goat/internal/store"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )
 
-var (
-	variants []string
-	weights  []float64
-	goal     string
-)
+var port int
 
 var initCmd = &cobra.Command{
-	Use:   "init [name]",
-	Short: "Create a new A/B test",
-	Long: `Create a new A/B test interactively or with flags.
+	Use:   "init",
+	Short: "Start headline-goat server",
+	Long: `Start the headline-goat server and show integration instructions.
 
-Interactive mode (recommended):
+The server provides:
+  - Global script at /ht.js
+  - Beacon endpoint for tracking events
+  - Dashboard for viewing results
+
+Tests auto-create when the first beacon arrives - no explicit setup needed.
+
+Example:
   headline-goat init
-
-With flags:
-  headline-goat init hero -v "Ship Faster" -v "Build Better"
-  headline-goat init hero -v "A" -v "B" --goal "Signup button click"`,
-	Args: cobra.MaximumNArgs(1),
+  headline-goat init --port 8080`,
 	RunE: runInit,
 }
 
 func init() {
-	initCmd.Flags().StringSliceVarP(&variants, "variants", "v", nil, "variant names (at least 2 required)")
-	initCmd.Flags().Float64SliceVarP(&weights, "weights", "w", nil, "variant weights (must sum to 1.0)")
-	initCmd.Flags().StringVarP(&goal, "goal", "g", "", "conversion goal description")
+	defaultPort := 8080
+	if p := os.Getenv("HG_PORT"); p != "" {
+		if parsed, err := strconv.Atoi(p); err == nil {
+			defaultPort = parsed
+		}
+	}
+
+	initCmd.Flags().IntVarP(&port, "port", "p", defaultPort, "port to listen on")
 	rootCmd.AddCommand(initCmd)
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
-	var name string
-	var err error
-
-	// Interactive mode if no name provided
-	if len(args) == 0 {
-		name, err = promptTestName()
-		if err != nil {
-			return err
-		}
-	} else {
-		name = args[0]
-	}
-
-	// Validate name
-	if !isValidName(name) {
-		return fmt.Errorf("invalid test name: must be alphanumeric with hyphens only")
-	}
-
-	// Interactive variant input if not provided via flags
-	if len(variants) == 0 {
-		variants, err = promptVariants()
-		if err != nil {
-			return err
-		}
-	}
-
-	// Validate variants (at least 2)
-	if len(variants) < 2 {
-		return fmt.Errorf("at least 2 variants required")
-	}
-
-	// Validate weights if provided
-	if len(weights) > 0 {
-		if len(weights) != len(variants) {
-			return fmt.Errorf("number of weights must match number of variants")
-		}
-
-		sum := 0.0
-		for _, w := range weights {
-			if w < 0 || w > 1 {
-				return fmt.Errorf("weights must be between 0 and 1")
-			}
-			sum += w
-		}
-
-		if math.Abs(sum-1.0) > 0.001 {
-			return fmt.Errorf("weights must sum to 1.0 (got %.3f)", sum)
-		}
+	// Prompt for framework to show appropriate instructions
+	framework, err := promptFramework()
+	if err != nil {
+		return err
 	}
 
 	// Open database
@@ -99,61 +59,35 @@ func runInit(cmd *cobra.Command, args []string) error {
 	}
 	defer s.Close()
 
-	// Create test
-	ctx := context.Background()
-	test, err := s.CreateTest(ctx, name, variants, weights, goal)
-	if err != nil {
-		return fmt.Errorf("failed to create test: %w", err)
-	}
+	// Token file path (alongside database)
+	tokenFile := filepath.Join(filepath.Dir(dbPath), ".headline-goat-token")
 
-	// Success message
-	fmt.Println()
-	fmt.Printf("Created test '%s' with %d variants:\n", test.Name, len(test.Variants))
-	for i, v := range test.Variants {
-		fmt.Printf("  %d: \"%s\"\n", i, v)
-	}
+	// Create server
+	srv := server.New(s, port, tokenFile)
 
-	// Explain next steps
-	fmt.Println()
-	fmt.Println("How it works:")
-	fmt.Println("  1. Add the snippet below to your site")
-	fmt.Println("  2. The script randomly shows one variant to each visitor")
-	fmt.Println("  3. Track conversions with the convert button/function")
-	fmt.Println("  4. Check results in the dashboard or with 'headline-goat results'")
-	fmt.Println()
+	// Print startup message with instructions
+	printStartupInstructions(framework, port, srv.Token())
 
-	// Generate snippet (always)
-	err = RunSnippetFlow(test)
-	if err != nil {
-		return err
-	}
-
-	// Final guidance
-	fmt.Println()
-	fmt.Println("What's next:")
-	fmt.Printf("  - View results:    headline-goat results %s\n", test.Name)
-	fmt.Printf("  - Open dashboard:  headline-goat otp\n")
-	fmt.Printf("  - Declare winner:  headline-goat winner %s -v <index>\n", test.Name)
-	fmt.Println()
-	fmt.Println("Once you declare a winner, running 'snippet' will generate")
-	fmt.Println("static code with just the winning variant (no A/B testing logic).")
-	fmt.Println()
-
-	return nil
+	// Start server quietly (we printed our own message)
+	return srv.StartQuiet()
 }
 
-func promptTestName() (string, error) {
-	prompt := promptui.Prompt{
-		Label: "Test name (e.g., hero, pricing-cta)",
-		Validate: func(input string) error {
-			if !isValidName(input) {
-				return fmt.Errorf("must be alphanumeric with hyphens only")
-			}
-			return nil
-		},
+func promptFramework() (string, error) {
+	frameworks := []string{
+		"HTML (vanilla JavaScript)",
+		"React / Next.js",
+		"Vue",
+		"Svelte",
+		"Laravel / Django / Other",
 	}
 
-	result, err := prompt.Run()
+	prompt := promptui.Select{
+		Label: "Your framework",
+		Items: frameworks,
+		Size:  5,
+	}
+
+	idx, _, err := prompt.Run()
 	if err != nil {
 		if err == promptui.ErrInterrupt {
 			os.Exit(0)
@@ -161,45 +95,86 @@ func promptTestName() (string, error) {
 		return "", err
 	}
 
-	return result, nil
+	switch idx {
+	case 0:
+		return "html", nil
+	case 1:
+		return "react", nil
+	case 2:
+		return "vue", nil
+	case 3:
+		return "svelte", nil
+	default:
+		return "other", nil
+	}
 }
 
-func promptVariants() ([]string, error) {
-	prompt := promptui.Prompt{
-		Label: "Variants (comma-separated, e.g., Ship Faster, Build Better)",
-		Validate: func(input string) error {
-			parts := parseVariants(input)
-			if len(parts) < 2 {
-				return fmt.Errorf("enter at least 2 variants separated by commas")
-			}
-			return nil
-		},
-	}
+func printStartupInstructions(framework string, port int, token string) {
+	fmt.Println()
+	fmt.Printf("Server running at http://localhost:%d\n", port)
+	fmt.Printf("Dashboard: http://localhost:%d/dashboard?token=%s\n", port, token)
+	fmt.Println()
+	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println()
 
-	result, err := prompt.Run()
-	if err != nil {
-		if err == promptui.ErrInterrupt {
-			os.Exit(0)
-		}
-		return nil, err
-	}
+	// Step 1: Deploy
+	fmt.Println("1. Deploy headline-goat to get a public URL")
+	fmt.Println()
+	fmt.Println("   Options: Fly.io, Cloudflare Tunnel, VPS with Caddy")
+	fmt.Println("   Docs: https://github.com/headline-goat/headline-goat#deployment")
+	fmt.Println()
 
-	return parseVariants(result), nil
+	// Step 2: Add script
+	fmt.Println("2. Add the script to your site")
+	fmt.Println()
+	fmt.Println("   <script src=\"https://YOUR-URL/ht.js\" defer></script>")
+	fmt.Println()
+
+	// Step 3: Create test
+	fmt.Println("3. Add a test with data attributes")
+	fmt.Println()
+	printFrameworkExample(framework)
+	fmt.Println()
+
+	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  results <name>   Show test statistics")
+	fmt.Println("  winner <name>    Declare a winner")
+	fmt.Println("  list             List all tests")
+	fmt.Println("  otp              Show dashboard URL")
+	fmt.Println()
+	fmt.Println("Press Ctrl+C to stop")
 }
 
-func parseVariants(input string) []string {
-	parts := strings.Split(input, ",")
-	var result []string
-	for _, p := range parts {
-		trimmed := strings.TrimSpace(p)
-		if trimmed != "" {
-			result = append(result, trimmed)
-		}
+func printFrameworkExample(framework string) {
+	switch framework {
+	case "react":
+		fmt.Println(`   <h1
+     data-ht-name="hero"
+     data-ht-variants='["Ship Faster","Build Better"]'
+   >
+     Ship Faster
+   </h1>
+   <button data-ht-convert="hero">Sign Up</button>`)
+	case "vue":
+		fmt.Println(`   <h1
+     data-ht-name="hero"
+     :data-ht-variants='JSON.stringify(["Ship Faster","Build Better"])'
+   >
+     Ship Faster
+   </h1>
+   <button data-ht-convert="hero">Sign Up</button>`)
+	case "svelte":
+		fmt.Println(`   <h1
+     data-ht-name="hero"
+     data-ht-variants={JSON.stringify(["Ship Faster","Build Better"])}
+   >
+     Ship Faster
+   </h1>
+   <button data-ht-convert="hero">Sign Up</button>`)
+	default:
+		fmt.Println(`   <h1 data-ht-name="hero" data-ht-variants='["A","B"]'>A</h1>
+   <button data-ht-convert="hero">Sign Up</button>`)
 	}
-	return result
-}
-
-func isValidName(name string) bool {
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9-]+$`, name)
-	return matched && len(name) > 0
 }

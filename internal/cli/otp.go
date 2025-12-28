@@ -25,7 +25,7 @@ func runOTP(cmd *cobra.Command, args []string) error {
 	data, err := os.ReadFile(tokenFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("no server running (token file not found)\nStart the server with: headline-goat serve")
+			return fmt.Errorf("no server running (token file not found)\nStart the server with: headline-goat")
 		}
 		return fmt.Errorf("failed to read token file: %w", err)
 	}

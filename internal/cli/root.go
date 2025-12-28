@@ -14,7 +14,10 @@ var rootCmd = &cobra.Command{
 	Use:   "headline-goat",
 	Short: "A minimal, self-hosted A/B testing tool for headlines",
 	Long: `headline-goat is a minimal, self-hosted A/B testing tool for headlines.
-Single Go binary, embedded SQLite, no external dependencies.`,
+Single Go binary, embedded SQLite, no external dependencies.
+
+Running without a subcommand starts the server (same as 'headline-goat init').`,
+	RunE: runInit, // Default action is to start server
 }
 
 func Execute() error {
