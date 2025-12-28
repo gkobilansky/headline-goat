@@ -334,6 +334,11 @@ func (s *SQLiteStore) DB() *sql.DB {
 	return s.db
 }
 
+// SetWinner marks a test as completed with the specified winning variant
+func (s *SQLiteStore) SetWinner(ctx context.Context, testName string, variantIndex int) error {
+	return s.UpdateTestState(ctx, testName, StateCompleted, &variantIndex)
+}
+
 func nullableString(b []byte) sql.NullString {
 	if len(b) == 0 {
 		return sql.NullString{}

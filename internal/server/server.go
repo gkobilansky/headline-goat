@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/headline-goat/headline-goat/internal/store"
@@ -14,15 +15,17 @@ type Server struct {
 	store     *store.SQLiteStore
 	port      int
 	token     string
+	tokenFile string
 	router    *http.ServeMux
 	startTime time.Time
 }
 
-func New(s *store.SQLiteStore, port int) *Server {
+func New(s *store.SQLiteStore, port int, tokenFile string) *Server {
 	srv := &Server{
 		store:     s,
 		port:      port,
 		token:     generateToken(),
+		tokenFile: tokenFile,
 		router:    http.NewServeMux(),
 		startTime: time.Now(),
 	}
@@ -32,17 +35,35 @@ func New(s *store.SQLiteStore, port int) *Server {
 }
 
 func (s *Server) setupRoutes() {
+	// Public endpoints
 	s.router.HandleFunc("/health", s.handleHealth)
 	s.router.HandleFunc("/b", s.handleBeacon)
 	s.router.HandleFunc("/t/", s.handleClientJS)
+
+	// Dashboard endpoints (protected)
+	s.router.Handle("/dashboard", s.authMiddleware(http.HandlerFunc(s.handleDashboard)))
+	s.router.Handle("/dashboard/test/", s.authMiddleware(http.HandlerFunc(s.handleDashboardTest)))
+	s.router.Handle("/dashboard/api/tests", s.authMiddleware(http.HandlerFunc(s.handleDashboardAPI)))
 }
 
 func (s *Server) Start() error {
+	// Write token to file for OTP command
+	if s.tokenFile != "" {
+		if err := os.WriteFile(s.tokenFile, []byte(s.token), 0600); err != nil {
+			fmt.Printf("Warning: failed to write token file: %v\n", err)
+		}
+	}
+
 	addr := fmt.Sprintf(":%d", s.port)
-	fmt.Printf("headline-goat running on %s\n", addr)
-	fmt.Printf("Dashboard: http://localhost:%d/dashboard\n", s.port)
-	fmt.Printf("Dashboard token: %s\n", s.token)
-	fmt.Println("\nPress Ctrl+C to stop")
+	fmt.Println()
+	fmt.Printf("headline-goat running on http://localhost:%d\n", s.port)
+	fmt.Println()
+	fmt.Printf("Dashboard: http://localhost:%d/dashboard?token=%s\n", s.port, s.token)
+	fmt.Println()
+	fmt.Println("To create a new test, open another terminal and run:")
+	fmt.Println("  headline-goat init")
+	fmt.Println()
+	fmt.Println("Press Ctrl+C to stop")
 
 	return http.ListenAndServe(addr, s.router)
 }

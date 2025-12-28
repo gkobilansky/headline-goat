@@ -28,7 +28,7 @@ func setupTestServer(t *testing.T) (*server.Server, *store.SQLiteStore, func()) 
 		t.Fatalf("failed to open store: %v", err)
 	}
 
-	srv := server.New(s, 8080)
+	srv := server.New(s, 8080, "")
 
 	cleanup := func() {
 		s.Close()

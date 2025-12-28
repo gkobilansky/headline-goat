@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/headline-goat/headline-goat/internal/server"
@@ -47,7 +48,10 @@ func runServe(cmd *cobra.Command, args []string) error {
 	}
 	defer s.Close()
 
+	// Token file path (alongside database)
+	tokenFile := filepath.Join(filepath.Dir(dbPath), ".headline-goat-token")
+
 	// Create and start server
-	srv := server.New(s, port)
+	srv := server.New(s, port, tokenFile)
 	return srv.Start()
 }

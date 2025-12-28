@@ -788,9 +788,9 @@ tests/
 - [x] `export --format json` produces valid JSON
 
 ### Manual Verification:
-- [ ] Results display is readable and correctly formatted
-- [ ] Confidence intervals look reasonable for sample data
-- [ ] Export files open correctly in spreadsheet/JSON tools
+- [x] Results display is readable and correctly formatted
+- [x] Confidence intervals look reasonable for sample data
+- [x] Export files open correctly in spreadsheet/JSON tools
 
 ---
 
@@ -890,19 +890,19 @@ tests/
 ## Success Criteria
 
 ### Automated Verification:
-- [ ] `go test ./... -v -race` passes
-- [ ] `/dashboard` without token returns 401
-- [ ] `/dashboard?token=valid` returns 200 and sets cookie
-- [ ] `/dashboard` with valid cookie returns 200
-- [ ] `/dashboard/api/tests` returns valid JSON
-- [ ] Assets are properly embedded in binary
+- [x] `go test ./... -v -race` passes
+- [x] `/dashboard` without token returns 401
+- [x] `/dashboard?token=valid` returns 200 and sets cookie
+- [x] `/dashboard` with valid cookie returns 200
+- [x] `/dashboard/api/tests` returns valid JSON
+- [x] Assets are properly embedded in binary
 
 ### Manual Verification:
-- [ ] Dashboard displays correctly in browser
-- [ ] Dark mode works with system preference
-- [ ] Mobile layout is usable
-- [ ] Test detail page shows stats correctly
-- [ ] Progress bars render properly
+- [x] Dashboard displays correctly in browser
+- [x] Dark mode works with system preference
+- [x] Mobile layout is usable
+- [x] Test detail page shows stats correctly
+- [x] Progress bars render properly
 
 ---
 
@@ -1090,14 +1090,14 @@ tests/
 ## Success Criteria
 
 ### Automated Verification:
-- [ ] `go test ./... -v -race` passes
-- [ ] All 7 framework templates render without errors
-- [ ] Multi-file snippets (Next.js, React, Laravel, Django) output all required files
-- [ ] Single-file snippets (HTML, Vue, Svelte) output correctly
-- [ ] All 3 animation variants render for React/Vue/Svelte
-- [ ] Snippet includes correct test name, variants, and server URL
-- [ ] Winner command updates test state to "completed"
-- [ ] Snippet for completed test shows static winner content (no A/B logic)
+- [x] `go test ./... -v -race` passes
+- [x] All 7 framework templates render without errors
+- [x] Multi-file snippets (Next.js, React, Laravel, Django) output all required files
+- [x] Single-file snippets (HTML, Vue, Svelte) output correctly
+- [x] All 3 animation variants render for React/Vue/Svelte
+- [x] Snippet includes correct test name, variants, and server URL
+- [x] Winner command updates test state to "completed"
+- [x] Snippet for completed test shows static winner content (no A/B logic)
 
 ### Manual Verification:
 - [ ] Interactive prompts work correctly in terminal

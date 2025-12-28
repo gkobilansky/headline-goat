@@ -1,0 +1,24 @@
+<p class="section-title">Your Tests</p>
+
+{{if .Tests}}
+<div class="test-list">
+  {{range .Tests}}
+  <a href="/dashboard/test/{{.Name}}" class="test-card">
+    <div class="test-card-header">
+      <span class="test-name">{{.Name}}</span>
+      <span class="state state-{{.State}}">{{.State}}</span>
+    </div>
+    <div class="test-meta">
+      {{.VariantCount}} variants &middot; {{.TotalViews}} views &middot; {{.AvgConversionRate}} avg conversion
+      {{if .Goal}}&middot; Goal: {{.Goal}}{{end}}
+    </div>
+    <div class="test-meta">Created {{.CreatedAt}}</div>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<div class="empty-state">
+  <p>No tests found.</p>
+  <p style="margin-top: 0.5rem;">Create one with: <code>headline-goat init &lt;name&gt; --variants "A" "B"</code></p>
+</div>
+{{end}}
