@@ -38,7 +38,7 @@ func GenerateGlobalScript(serverURL string) string {
     localStorage.setItem('ht_vid',vid);
   }
 
-  // Process all test elements
+  // Process all data-attribute test elements (client-side tests)
   document.querySelectorAll('[data-ht-name]').forEach(function(el){
     var name=el.dataset.htName;
     var variants=JSON.parse(el.dataset.htVariants||'[]');
@@ -47,7 +47,7 @@ func GenerateGlobalScript(serverURL string) string {
     // Check for SSR-selected variant
     if(el.dataset.htSelected!==undefined){
       var selected=parseInt(el.dataset.htSelected);
-      beacon(name,selected,'view');
+      beacon(name,selected,'view',variants,'client');
       return;
     }
 
@@ -64,8 +64,8 @@ func GenerateGlobalScript(serverURL string) string {
     // Swap text
     el.textContent=variants[v];
 
-    // Send view beacon
-    beacon(name,v,'view');
+    // Send view beacon with variants for auto-creation
+    beacon(name,v,'view',variants,'client');
   });
 
   // Process convert elements
@@ -82,18 +82,85 @@ func GenerateGlobalScript(serverURL string) string {
 
     // URL type: beacon on load
     if(el.dataset.htConvertType==='url'){
-      beacon(name,v,'convert');
+      beacon(name,v,'convert',null,'client');
       return;
     }
 
     // Click handler
     el.addEventListener('click',function(){
-      beacon(name,v,'convert');
+      beacon(name,v,'convert',null,'client');
     });
   });
 
-  function beacon(t,v,e){
-    navigator.sendBeacon(S+'/b',JSON.stringify({t:t,v:v,e:e,vid:vid}));
+  // Server-side test handling with cache
+  (function(){
+    var path=location.pathname;
+    var cacheKey='ht_tests_'+path;
+    var cached=localStorage.getItem(cacheKey);
+
+    // Apply cached tests immediately (no flash on repeat visits)
+    if(cached){
+      try{
+        applyServerTests(JSON.parse(cached));
+      }catch(e){}
+    }
+
+    // Fetch fresh config in background, update cache
+    fetch(S+'/api/tests?url='+encodeURIComponent(path))
+      .then(function(r){return r.json()})
+      .then(function(tests){
+        // Update cache for next visit
+        localStorage.setItem(cacheKey,JSON.stringify(tests));
+        // Apply if not already applied from cache
+        if(!cached)applyServerTests(tests);
+      })
+      .catch(function(){});
+  })();
+
+  function applyServerTests(tests){
+    if(!tests||!tests.length)return;
+    tests.forEach(function(test){
+      // Skip if already processed via data attributes
+      if(document.querySelector('[data-ht-name="'+test.name+'"]'))return;
+
+      // Find target element
+      if(!test.target)return;
+      var el=document.querySelector(test.target);
+      if(!el)return;
+
+      // Assign variant (same localStorage pattern)
+      var key='ht_'+test.name;
+      var v=localStorage.getItem(key);
+      if(v===null){
+        v=Math.floor(Math.random()*test.variants.length);
+        localStorage.setItem(key,v);
+      }else{
+        v=parseInt(v);
+      }
+
+      // Apply variant
+      if(test.variants[v])el.textContent=test.variants[v];
+      beacon(test.name,v,'view',null,'server');
+
+      // Setup conversion tracking
+      if(test.cta_target){
+        var cta=document.querySelector(test.cta_target);
+        if(cta){
+          cta.addEventListener('click',function(){
+            beacon(test.name,v,'convert',null,'server');
+          });
+        }
+      }
+      if(test.conversion_url&&location.pathname===test.conversion_url){
+        beacon(test.name,v,'convert',null,'server');
+      }
+    });
+  }
+
+  function beacon(t,v,e,variants,src){
+    var payload={t:t,v:v,e:e,vid:vid,src:src||'client'};
+    if(variants)payload.variants=variants;
+    navigator.sendBeacon(S+'/b',JSON.stringify(payload));
   }
 })();`, serverURL)
 }

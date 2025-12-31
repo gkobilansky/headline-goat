@@ -39,6 +39,7 @@ func (s *Server) setupRoutes() {
 	s.router.HandleFunc("/health", s.handleHealth)
 	s.router.HandleFunc("/b", s.handleBeacon)
 	s.router.HandleFunc("/ht.js", s.handleGlobalJS)
+	s.router.HandleFunc("/api/tests", s.handleTestsAPI)
 
 	// Dashboard endpoints (protected)
 	s.router.Handle("/dashboard", s.authMiddleware(http.HandlerFunc(s.handleDashboard)))
