@@ -4,16 +4,15 @@ A/B test your headlines without the enterprise BS.
 
 Single binary. Zero dependencies. Self-hosted. **Ship in 30 seconds.**
 
-```html
-<script src="https://your-server.com/hlg.js" defer></script>
+```bash
+# Create a test via CLI
+hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 
-<h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>
-  Ship Faster
-</h1>
-<button data-hlg-convert="hero">Sign Up</button>
+# Or define tests inline with data attributes
+<h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>Ship Faster</h1>
 ```
 
-That's it. Tests auto-create when traffic arrives. View results in the dashboard or CLI.
+Two ways to create tests. Same powerful results. View stats in the dashboard or CLI.
 
 ---
 
@@ -61,7 +60,13 @@ Drop the script tag in your `<head>`:
 
 ### 4. Create a test
 
-Add data attributes to any headline:
+**Option A: Via CLI** (centralized, no HTML changes needed)
+
+```bash
+hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
+```
+
+**Option B: Via data attributes** (inline, self-documenting)
 
 ```html
 <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>
@@ -69,6 +74,8 @@ Add data attributes to any headline:
 </h1>
 <button data-hlg-convert="hero">Sign Up</button>
 ```
+
+Use CLI when you want central control or can't easily edit HTML. Use data attributes when you want tests defined alongside the elements they modify.
 
 ### 5. Watch the results
 
@@ -102,9 +109,39 @@ Tests auto-create on first beacon. No pre-registration needed.
 
 ---
 
-## Data Attributes
+## Creating Tests
 
-### Define a test
+Two approaches, same results. Pick what fits your workflow.
+
+### Option A: CLI (centralized control)
+
+Create tests from the command line with CSS selector targeting:
+
+```bash
+# Basic test
+hlg create hero --variants "Ship Faster,Build Better"
+
+# With URL and element targeting
+hlg create hero \
+  --variants "Ship Faster,Build Better" \
+  --url "/" \
+  --target "h1" \
+  --cta-target "button.signup"
+```
+
+| Flag | Description |
+|------|-------------|
+| `--variants` | Comma-separated variant text (required) |
+| `--url` | Page path to match (e.g., "/", "/pricing") |
+| `--target` | CSS selector for the headline element |
+| `--cta-target` | CSS selector for the conversion button |
+| `--conversion-url` | Track conversion on page load (e.g., "/thanks") |
+
+**Best for:** Central test management, can't easily edit HTML, multiple tests across pages.
+
+### Option B: Data Attributes (inline definition)
+
+Define tests directly in your HTML:
 
 ```html
 <h1
@@ -120,7 +157,9 @@ Tests auto-create on first beacon. No pre-registration needed.
 | `data-hlg-name` | Yes | Unique test identifier |
 | `data-hlg-variants` | Yes | JSON array of text variants |
 
-### Track conversions
+**Best for:** Self-documenting tests, quick iteration, tests defined where they're used.
+
+### Tracking Conversions
 
 ```html
 <!-- Click conversion (buttons, links) -->
@@ -144,7 +183,7 @@ Tests auto-create on first beacon. No pre-registration needed.
 | `data-hlg-convert-type` | No | Set to `"url"` for page-load conversion |
 | `data-hlg-convert-variants` | No | JSON array of button text variants |
 
-### SSR support
+### SSR Support
 
 For server-rendered apps where you want to avoid a text flash:
 
@@ -172,7 +211,7 @@ When `data-hlg-selected` is present, the script skips text swap and just sends t
 | `hlg winner <name> --variant N` | Declare a winner |
 | `hlg export <name>` | Export raw data (CSV/JSON) |
 | `hlg create <name> --variants "A,B"` | Create test via CLI |
-| `hlg otp` | Show dashboard access token |
+| `hlg token` | Show dashboard URL |
 
 ### Global flags
 
@@ -228,23 +267,6 @@ function Hero() {
 </h1>
 <button data-hlg-convert="hero">Sign Up</button>
 ```
-
----
-
-## Server-Side Tests
-
-For more control, create tests via CLI with URL targeting:
-
-```bash
-# Create a test that targets a specific page and element
-hlg create "hero" \
-  --variants "Ship Faster,Build Better" \
-  --url "/" \
-  --target "h1" \
-  --cta-target "button.signup"
-```
-
-The script fetches test config from the server and applies variants automatically. No data attributes needed in HTML.
 
 ---
 
