@@ -27,21 +27,21 @@ This project follows Test-Driven Development with no exceptions:
 go test ./... -v -race
 
 # Build development binary
-go build -o headline-goat ./cmd/headline-goat
+go build -o hlg ./cmd/hlg
 
 # Build production binary (optimized with embedded assets)
-go build -ldflags="-s -w" -o headline-goat ./cmd/headline-goat
+go build -ldflags="-s -w" -o hlg ./cmd/hlg
 
 # Cross-compile examples
-GOOS=linux GOARCH=amd64 go build -o headline-goat-linux-amd64 ./cmd/headline-goat
-GOOS=darwin GOARCH=arm64 go build -o headline-goat-darwin-arm64 ./cmd/headline-goat
+GOOS=linux GOARCH=amd64 go build -o hlg-linux-amd64 ./cmd/hlg
+GOOS=darwin GOARCH=arm64 go build -o hlg-darwin-arm64 ./cmd/hlg
 ```
 
 ## Architecture
 
 ```
 headline-goat/
-├── cmd/headline-goat/main.go    # CLI entry point
+├── cmd/hlg/main.go              # CLI entry point
 ├── internal/
 │   ├── cli/                     # CLI commands (init, list, serve, results, etc.)
 │   ├── server/                  # HTTP server (handlers, middleware, routing)

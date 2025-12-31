@@ -26,33 +26,33 @@ func (s *Server) handleGlobalJS(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(script))
 }
 
-// GenerateGlobalScript generates the global ht.js script with the given server URL
+// GenerateGlobalScript generates the global hlg.js script with the given server URL
 func GenerateGlobalScript(serverURL string) string {
 	return fmt.Sprintf(`(function(){
   var S='%s';
 
   // Get or create visitor ID
-  var vid=localStorage.getItem('ht_vid');
+  var vid=localStorage.getItem('hlg_vid');
   if(!vid){
     vid=crypto.randomUUID();
-    localStorage.setItem('ht_vid',vid);
+    localStorage.setItem('hlg_vid',vid);
   }
 
   // Process all data-attribute test elements (client-side tests)
-  document.querySelectorAll('[data-ht-name]').forEach(function(el){
-    var name=el.dataset.htName;
-    var variants=JSON.parse(el.dataset.htVariants||'[]');
+  document.querySelectorAll('[data-hlg-name]').forEach(function(el){
+    var name=el.dataset.hlgName;
+    var variants=JSON.parse(el.dataset.hlgVariants||'[]');
     if(!variants.length)return;
 
     // Check for SSR-selected variant
-    if(el.dataset.htSelected!==undefined){
-      var selected=parseInt(el.dataset.htSelected);
+    if(el.dataset.hlgSelected!==undefined){
+      var selected=parseInt(el.dataset.hlgSelected);
       beacon(name,selected,'view',variants,'client');
       return;
     }
 
     // Get or assign variant
-    var key='ht_'+name;
+    var key='hlg_'+name;
     var v=localStorage.getItem(key);
     if(v===null){
       v=Math.floor(Math.random()*variants.length);
@@ -69,19 +69,19 @@ func GenerateGlobalScript(serverURL string) string {
   });
 
   // Process convert elements
-  document.querySelectorAll('[data-ht-convert]').forEach(function(el){
-    var name=el.dataset.htConvert;
-    var v=parseInt(localStorage.getItem('ht_'+name)||'0');
+  document.querySelectorAll('[data-hlg-convert]').forEach(function(el){
+    var name=el.dataset.hlgConvert;
+    var v=parseInt(localStorage.getItem('hlg_'+name)||'0');
 
     // Swap text if variants provided
-    var variants=el.dataset.htConvertVariants;
+    var variants=el.dataset.hlgConvertVariants;
     if(variants){
       variants=JSON.parse(variants);
       if(variants[v])el.textContent=variants[v];
     }
 
     // URL type: beacon on load
-    if(el.dataset.htConvertType==='url'){
+    if(el.dataset.hlgConvertType==='url'){
       beacon(name,v,'convert',null,'client');
       return;
     }
@@ -95,7 +95,7 @@ func GenerateGlobalScript(serverURL string) string {
   // Server-side test handling with cache
   (function(){
     var path=location.pathname;
-    var cacheKey='ht_tests_'+path;
+    var cacheKey='hlg_tests_'+path;
     var cached=localStorage.getItem(cacheKey);
 
     // Apply cached tests immediately (no flash on repeat visits)
@@ -121,7 +121,7 @@ func GenerateGlobalScript(serverURL string) string {
     if(!tests||!tests.length)return;
     tests.forEach(function(test){
       // Skip if already processed via data attributes
-      if(document.querySelector('[data-ht-name="'+test.name+'"]'))return;
+      if(document.querySelector('[data-hlg-name="'+test.name+'"]'))return;
 
       // Find target element
       if(!test.target)return;
@@ -129,7 +129,7 @@ func GenerateGlobalScript(serverURL string) string {
       if(!el)return;
 
       // Assign variant (same localStorage pattern)
-      var key='ht_'+test.name;
+      var key='hlg_'+test.name;
       var v=localStorage.getItem(key);
       if(v===null){
         v=Math.floor(Math.random()*test.variants.length);

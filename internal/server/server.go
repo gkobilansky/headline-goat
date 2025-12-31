@@ -38,7 +38,7 @@ func (s *Server) setupRoutes() {
 	// Public endpoints
 	s.router.HandleFunc("/health", s.handleHealth)
 	s.router.HandleFunc("/b", s.handleBeacon)
-	s.router.HandleFunc("/ht.js", s.handleGlobalJS)
+	s.router.HandleFunc("/hlg.js", s.handleGlobalJS)
 	s.router.HandleFunc("/api/tests", s.handleTestsAPI)
 
 	// Dashboard endpoints (protected)
@@ -68,7 +68,7 @@ func (s *Server) StartWithOptions(printMessages bool) error {
 
 	if printMessages {
 		fmt.Println()
-		fmt.Printf("headline-goat running on http://localhost:%d\n", s.port)
+		fmt.Printf("🐐 Headline Goat running on http://localhost:%d\n", s.port)
 		fmt.Printf("Dashboard: http://localhost:%d/dashboard?token=%s\n", s.port, s.token)
 		fmt.Println()
 		fmt.Println("Press Ctrl+C to stop")

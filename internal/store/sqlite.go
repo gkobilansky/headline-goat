@@ -48,6 +48,11 @@ CREATE INDEX IF NOT EXISTS idx_events_test ON events(test_name);
 CREATE INDEX IF NOT EXISTS idx_events_test_event ON events(test_name, event_type);
 CREATE INDEX IF NOT EXISTS idx_events_visitor ON events(test_name, visitor_id, event_type);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_events_dedup ON events(test_name, visitor_id, event_type);
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
 `
 
 func Open(dbPath string) (*SQLiteStore, error) {
@@ -569,4 +574,30 @@ func nullableString(b []byte) sql.NullString {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: string(b), Valid: true}
+}
+
+// SetSetting stores a key-value setting (upserts)
+func (s *SQLiteStore) SetSetting(ctx context.Context, key, value string) error {
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO settings (key, value) VALUES (?, ?)
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+		key, value)
+	if err != nil {
+		return fmt.Errorf("failed to set setting: %w", err)
+	}
+	return nil
+}
+
+// GetSetting retrieves a setting by key
+func (s *SQLiteStore) GetSetting(ctx context.Context, key string) (string, error) {
+	var value string
+	err := s.db.QueryRowContext(ctx,
+		`SELECT value FROM settings WHERE key = ?`, key).Scan(&value)
+	if err == sql.ErrNoRows {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", fmt.Errorf("failed to get setting: %w", err)
+	}
+	return value, nil
 }

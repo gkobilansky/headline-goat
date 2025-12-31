@@ -44,27 +44,27 @@ func TestGenerateGlobalScript_ContainsLocalStorageLogic(t *testing.T) {
 	}
 
 	// Should have visitor ID key
-	if !strings.Contains(script, "ht_vid") {
-		t.Error("expected script to contain visitor ID key 'ht_vid'")
+	if !strings.Contains(script, "hlg_vid") {
+		t.Error("expected script to contain visitor ID key 'hlg_vid'")
 	}
 }
 
 func TestGenerateGlobalScript_ContainsDataAttributeSelectors(t *testing.T) {
 	script := server.GenerateGlobalScript("http://localhost:8080")
 
-	// Should select data-ht-name elements
-	if !strings.Contains(script, "data-ht-name") {
-		t.Error("expected script to select data-ht-name elements")
+	// Should select data-hlg-name elements
+	if !strings.Contains(script, "data-hlg-name") {
+		t.Error("expected script to select data-hlg-name elements")
 	}
 
-	// Should select data-ht-convert elements
-	if !strings.Contains(script, "data-ht-convert") {
-		t.Error("expected script to select data-ht-convert elements")
+	// Should select data-hlg-convert elements
+	if !strings.Contains(script, "data-hlg-convert") {
+		t.Error("expected script to select data-hlg-convert elements")
 	}
 
-	// Should handle variants via dataset.htVariants (JavaScript camelCase API)
-	if !strings.Contains(script, "htVariants") {
-		t.Error("expected script to handle variants via htVariants")
+	// Should handle variants via dataset.hlgVariants (JavaScript camelCase API)
+	if !strings.Contains(script, "hlgVariants") {
+		t.Error("expected script to handle variants via hlgVariants")
 	}
 }
 
@@ -77,8 +77,8 @@ func TestGenerateGlobalScript_ContainsVariantAssignment(t *testing.T) {
 	}
 
 	// Should store variant in localStorage
-	if !strings.Contains(script, "ht_") {
-		t.Error("expected script to store variant with 'ht_' prefix")
+	if !strings.Contains(script, "hlg_") {
+		t.Error("expected script to store variant with 'hlg_' prefix")
 	}
 }
 

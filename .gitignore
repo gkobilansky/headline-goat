@@ -1,6 +1,6 @@
 # Binaries
-/headline-goat
-/headline-goat-*
+/hlg
+/hlg-*
 *.exe
 
 # Database
@@ -9,7 +9,7 @@
 *.db-shm
 
 # Runtime
-.headline-goat-token
+.hlg-token
 
 # IDE
 .idea/

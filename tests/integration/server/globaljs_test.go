@@ -11,7 +11,7 @@ func TestGlobalJS_ReturnsJavaScript(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodGet, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/hlg.js", nil)
 	w := httptest.NewRecorder()
 
 	srv.Handler().ServeHTTP(w, req)
@@ -30,7 +30,7 @@ func TestGlobalJS_HasCorrectContentType(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodGet, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/hlg.js", nil)
 	w := httptest.NewRecorder()
 
 	srv.Handler().ServeHTTP(w, req)
@@ -45,7 +45,7 @@ func TestGlobalJS_HasCacheHeaders(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodGet, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/hlg.js", nil)
 	w := httptest.NewRecorder()
 
 	srv.Handler().ServeHTTP(w, req)
@@ -60,7 +60,7 @@ func TestGlobalJS_ContainsServerURL(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodGet, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/hlg.js", nil)
 	req.Host = "localhost:8080"
 	w := httptest.NewRecorder()
 
@@ -78,7 +78,7 @@ func TestGlobalJS_ContainsDataAttributeSelectors(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodGet, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/hlg.js", nil)
 	w := httptest.NewRecorder()
 
 	srv.Handler().ServeHTTP(w, req)
@@ -86,12 +86,12 @@ func TestGlobalJS_ContainsDataAttributeSelectors(t *testing.T) {
 	body := w.Body.String()
 
 	// Should contain data attribute selectors
-	if !strings.Contains(body, "data-ht-name") {
-		t.Error("expected body to contain 'data-ht-name' selector")
+	if !strings.Contains(body, "data-hlg-name") {
+		t.Error("expected body to contain 'data-hlg-name' selector")
 	}
 
-	if !strings.Contains(body, "data-ht-convert") {
-		t.Error("expected body to contain 'data-ht-convert' selector")
+	if !strings.Contains(body, "data-hlg-convert") {
+		t.Error("expected body to contain 'data-hlg-convert' selector")
 	}
 }
 
@@ -99,7 +99,7 @@ func TestGlobalJS_ContainsBeaconLogic(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodGet, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodGet, "/hlg.js", nil)
 	w := httptest.NewRecorder()
 
 	srv.Handler().ServeHTTP(w, req)
@@ -121,7 +121,7 @@ func TestGlobalJS_MethodNotAllowed(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()
 
-	req := httptest.NewRequest(http.MethodPost, "/ht.js", nil)
+	req := httptest.NewRequest(http.MethodPost, "/hlg.js", nil)
 	w := httptest.NewRecorder()
 
 	srv.Handler().ServeHTTP(w, req)

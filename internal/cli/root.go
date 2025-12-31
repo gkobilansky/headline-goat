@@ -11,12 +11,12 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "headline-goat",
-	Short: "A minimal, self-hosted A/B testing tool for headlines",
-	Long: `headline-goat is a minimal, self-hosted A/B testing tool for headlines.
+	Use:   "hlg",
+	Short: "Headline Goat - A minimal, self-hosted A/B testing tool for headlines",
+	Long: `🐐 Headline Goat is a minimal, self-hosted A/B testing tool for headlines.
 Single Go binary, embedded SQLite, no external dependencies.
 
-Running without a subcommand starts the server (same as 'headline-goat init').`,
+Running without a subcommand starts the server (same as 'hlg init').`,
 	RunE: runInit, // Default action is to start server
 }
 
@@ -26,7 +26,7 @@ func Execute() error {
 
 func init() {
 	// Global flags
-	rootCmd.PersistentFlags().StringVar(&dbPath, "db", getEnvOrDefault("HG_DB_PATH", "./headline-goat.db"), "database path")
+	rootCmd.PersistentFlags().StringVar(&dbPath, "db", getEnvOrDefault("HG_DB_PATH", "./hlg.db"), "database path")
 }
 
 func getEnvOrDefault(key, defaultValue string) string {
