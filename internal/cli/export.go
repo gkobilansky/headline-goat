@@ -20,8 +20,8 @@ var exportCmd = &cobra.Command{
 	Long: `Export raw event data in CSV or JSON format.
 
 Examples:
-  headline-goat export hero --format csv > hero-data.csv
-  headline-goat export hero --format json > hero-data.json`,
+  hlg export hero --format csv > hero-data.csv
+  hlg export hero --format json > hero-data.json`,
 	Args: cobra.ExactArgs(1),
 	RunE: runExport,
 }
@@ -51,7 +51,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 	_, err = s.GetTest(ctx, name)
 	if err != nil {
 		if err == store.ErrNotFound {
-			return fmt.Errorf("test '%s' not found", name)
+			return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", name)
 		}
 		return fmt.Errorf("failed to get test: %w", err)
 	}
@@ -60,6 +60,12 @@ func runExport(cmd *cobra.Command, args []string) error {
 	events, err := s.GetEvents(ctx, name)
 	if err != nil {
 		return fmt.Errorf("failed to get events: %w", err)
+	}
+
+	if len(events) == 0 {
+		fmt.Fprintf(os.Stderr, "No events recorded yet for test '%s'.\n", name)
+		fmt.Fprintln(os.Stderr, "Events appear after visitors view your page with the headline-goat script.")
+		return nil
 	}
 
 	if exportFormat == "csv" {

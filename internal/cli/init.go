@@ -17,7 +17,7 @@ var port int
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Start Headline Goat server",
+	Short: "Start the server and show setup instructions",
 	Long: `Start the Headline Goat server and show integration instructions.
 
 The server provides:
@@ -27,9 +27,10 @@ The server provides:
 
 Tests auto-create when the first beacon arrives - no explicit setup needed.
 
-Example:
+Examples:
+  hlg
   hlg init
-  hlg init --port 8080`,
+  hlg init --port 3000`,
 	RunE: runInit,
 }
 
@@ -207,10 +208,12 @@ func printStartupInstructions(framework, serverURL string, port int, token strin
 	fmt.Println(strings.Repeat("-", 60))
 	fmt.Println()
 	fmt.Println("Commands:")
-	fmt.Println("  results <name>   Show test statistics")
-	fmt.Println("  winner <name>    Declare a winner")
 	fmt.Println("  list             List all tests")
-	fmt.Println("  otp              Show dashboard URL")
+	fmt.Println("  results <name>   View detailed test results")
+	fmt.Println("  winner <name>    Declare a winning variant")
+	fmt.Println("  create <name>    Create a test via CLI")
+	fmt.Println("  export <name>    Export raw event data")
+	fmt.Println("  token            Show dashboard URL")
 	fmt.Println()
 	fmt.Println("Press Ctrl+C to stop")
 }

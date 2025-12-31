@@ -38,7 +38,7 @@ func runResults(cmd *cobra.Command, args []string) error {
 	test, err := s.GetTest(ctx, name)
 	if err != nil {
 		if err == store.ErrNotFound {
-			return fmt.Errorf("test '%s' not found", name)
+			return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", name)
 		}
 		return fmt.Errorf("failed to get test: %w", err)
 	}

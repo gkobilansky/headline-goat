@@ -38,8 +38,10 @@ func runList(cmd *cobra.Command, args []string) error {
 	}
 
 	if len(tests) == 0 {
-		fmt.Println("No tests found.")
-		fmt.Println("Tests auto-create when beacon data arrives. Add headline-goat to your site to start.")
+		fmt.Println("No tests yet.")
+		fmt.Println()
+		fmt.Println("Tests auto-create when visitors arrive. Add the script to your site:")
+		fmt.Println("  <script src=\"YOUR_SERVER/hlg.js\" defer></script>")
 		return nil
 	}
 

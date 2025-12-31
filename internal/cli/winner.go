@@ -18,13 +18,11 @@ func newWinnerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "winner <name>",
 		Short: "Declare a winner for a test",
-		Long: `Declare a winning variant for an A/B test and complete it.
-
-After declaring a winner, the snippet command will generate static code
-showing only the winning variant (no A/B testing logic).
+		Long: `Declare a winning variant for an A/B test and mark it complete.
 
 Example:
-  headline-goat winner hero --variant 0`,
+  hlg winner hero --variant 0
+  hlg winner pricing --variant 1`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			testName := args[0]
@@ -39,17 +37,17 @@ Example:
 			ctx := context.Background()
 			test, err := s.GetTest(ctx, testName)
 			if err != nil {
-				return fmt.Errorf("test not found: %s", testName)
+				return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", testName)
 			}
 
 			// Validate test is running
 			if test.State != store.StateRunning {
-				return fmt.Errorf("test is not running (current state: %s)", test.State)
+				return fmt.Errorf("test '%s' is already %s", testName, test.State)
 			}
 
 			// Validate variant index
 			if variantIndex < 0 || variantIndex >= len(test.Variants) {
-				return fmt.Errorf("invalid variant index: %d (test has %d variants: 0-%d)", variantIndex, len(test.Variants), len(test.Variants)-1)
+				return fmt.Errorf("variant %d doesn't exist. Test '%s' has variants 0-%d", variantIndex, testName, len(test.Variants)-1)
 			}
 
 			// Set winner
@@ -58,9 +56,11 @@ Example:
 				return fmt.Errorf("failed to set winner: %w", err)
 			}
 
-			fmt.Printf("Declared winner for test '%s': variant %d (\"%s\")\n", testName, variantIndex, test.Variants[variantIndex])
-			fmt.Println("Test has been marked as completed.")
-			fmt.Println("\nNote: Running 'snippet' will now generate static code with the winning variant only.")
+			fmt.Printf("Winner declared: \"%s\" (variant %d)\n", test.Variants[variantIndex], variantIndex)
+			fmt.Printf("Test '%s' is now complete.\n", testName)
+			fmt.Println()
+			fmt.Println("You can now update your HTML to use the winning text directly:")
+			fmt.Printf("  <h1>%s</h1>\n", test.Variants[variantIndex])
 
 			return nil
 		},

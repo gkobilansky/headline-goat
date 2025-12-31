@@ -28,10 +28,10 @@ func newCreateCmd() *cobra.Command {
 		Long: `Create a new A/B test with the specified name and variants.
 
 Examples:
-  headline-goat create "hero" --variants "Ship Faster,Build Better"
-  headline-goat create "cta" --variants "Sign Up,Get Started,Try Free"
-  headline-goat create "hero" --variants "A,B" --url "/" --target "h1"
-  headline-goat create "hero" --variants "A,B" --url "/" --target "h1" --cta-target "button.signup"`,
+  hlg create hero --variants "Ship Faster,Build Better"
+  hlg create cta --variants "Sign Up,Get Started,Try Free"
+  hlg create hero --variants "A,B" --url "/" --target "h1"
+  hlg create hero --variants "A,B" --url "/" --target "h1" --cta-target "button.signup"`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			testName := args[0]
@@ -43,12 +43,12 @@ Examples:
 			}
 
 			if len(variantList) < 2 {
-				return fmt.Errorf("at least 2 variants required")
+				return fmt.Errorf("need at least 2 variants. Example: --variants \"A,B\"")
 			}
 
 			// Validate mutually exclusive flags
 			if ctaTarget != "" && conversionURL != "" {
-				return fmt.Errorf("specify either --cta-target or --conversion-url, not both")
+				return fmt.Errorf("use --cta-target OR --conversion-url, not both")
 			}
 
 			// Open database
