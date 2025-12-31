@@ -321,6 +321,30 @@ No more "this variant is winning" with 12 visits.
 
 ---
 
+## AI Coding Agent Friendly
+
+headline-goat's simple CLI makes it trivial for AI coding assistants to help you set up and manage tests.
+
+**Works great with Claude Code, Cursor, Copilot, and other AI tools:**
+
+```
+You: "Set up an A/B test for the hero headline on the homepage"
+
+Claude: hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
+        Done. Check results with: hlg results hero
+```
+
+No complex APIs or authentication flows. Just shell commands that any coding agent can execute. Ask your AI to:
+
+- Create tests targeting specific elements
+- Check which variants are winning
+- Export data for analysis
+- Declare winners when significance is reached
+
+The CLI outputs clean, parseable text that AI tools understand.
+
+---
+
 ## Configuration
 
 | Env Variable | Default | Description |
