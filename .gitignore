@@ -1,0 +1,24 @@
+# Binaries
+/hlg
+/hlg-*
+*.exe
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# Runtime
+.hlg-token
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage.out

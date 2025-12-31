@@ -1,0 +1,27 @@
+<p class="section-title">Your Tests</p>
+
+{{if .Tests}}
+<div class="test-list">
+  {{range .Tests}}
+  <a href="/dashboard/test/{{.Name}}" class="test-card">
+    <div class="test-card-header">
+      <span class="test-name">{{.Name}}</span>
+      <span>
+        {{if .HasSourceConflict}}<span style="background: #ffc107; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem; margin-right: 0.5rem;">CONFLICT</span>{{end}}
+        <span class="state state-{{.State}}">{{.State}}</span>
+      </span>
+    </div>
+    <div class="test-meta">
+      {{.VariantCount}} variants &middot; {{.TotalViews}} views &middot; {{.AvgConversionRate}} avg conversion
+      {{if .Goal}}&middot; Goal: {{.Goal}}{{end}}
+    </div>
+    <div class="test-meta">Created {{.CreatedAt}}</div>
+  </a>
+  {{end}}
+</div>
+{{else}}
+<div class="empty-state">
+  <p>No tests found.</p>
+  <p style="margin-top: 0.5rem;">Create one with: <code>headline-goat init &lt;name&gt; --variants "A" "B"</code></p>
+</div>
+{{end}}
