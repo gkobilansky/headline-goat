@@ -6,12 +6,30 @@
     <p class="test-info">
       Created {{.Test.CreatedAt}}
       {{if .Test.Goal}}&middot; Goal: {{.Test.Goal}}{{end}}
+      &middot; Source: {{.Test.Source}}
     </p>
   </div>
   <div>
     <span class="state state-{{.Test.State}}">{{.Test.State}}</span>
   </div>
 </div>
+
+{{if .Test.HasSourceConflict}}
+<div class="warning-box" style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 1rem; margin-bottom: 1rem;">
+  <strong style="color: #856404;">⚠️ Source Conflict Detected</strong>
+  <p style="color: #856404; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+    This test was created via CLI but is receiving beacons from HTML data attributes.
+    This may cause inconsistent variant assignments.
+  </p>
+  <p style="color: #856404; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+    <strong>Resolution options:</strong>
+  </p>
+  <ul style="color: #856404; margin: 0.25rem 0 0 0; font-size: 0.9rem; padding-left: 1.5rem;">
+    <li>Remove data-ht-* attributes from HTML (use server-side test only)</li>
+    <li>Delete CLI test and rely on client-side data attributes</li>
+  </ul>
+</div>
+{{end}}
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
   <p class="section-title" style="margin-bottom: 0;">Results</p>

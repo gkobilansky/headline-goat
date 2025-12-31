@@ -45,7 +45,7 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	// Print table
 	w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tSTATE\tVARIANTS\tVIEWS\tCONVERSIONS\tCREATED")
+	fmt.Fprintln(w, "NAME\tSOURCE\tSTATE\tVARIANTS\tVIEWS\tCONVERSIONS\tCREATED")
 
 	for _, test := range tests {
 		// Get stats for this test
@@ -61,8 +61,15 @@ func runList(cmd *cobra.Command, args []string) error {
 			totalConversions += stat.Conversions
 		}
 
-		fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\t%s\n",
+		// Format source with conflict indicator
+		source := test.Source
+		if test.HasSourceConflict {
+			source += " (!)"
+		}
+
+		fmt.Fprintf(w, "%s\t%s\t%s\t%d\t%s\t%s\t%s\n",
 			test.Name,
+			source,
 			strings.ToUpper(string(test.State)),
 			len(test.Variants),
 			formatNumber(totalViews),

@@ -31,6 +31,7 @@ type testListItem struct {
 	AvgConversionRate string
 	Goal              string
 	CreatedAt         string
+	HasSourceConflict bool
 }
 
 type detailData struct {
@@ -41,10 +42,12 @@ type detailData struct {
 }
 
 type testDetailItem struct {
-	Name      string
-	State     string
-	Goal      string
-	CreatedAt string
+	Name              string
+	State             string
+	Goal              string
+	CreatedAt         string
+	Source            string
+	HasSourceConflict bool
 }
 
 type detailResult struct {
@@ -109,6 +112,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 			AvgConversionRate: avgRate,
 			Goal:              t.ConversionGoal,
 			CreatedAt:         t.CreatedAt.Format("Jan 2, 2006"),
+			HasSourceConflict: t.HasSourceConflict,
 		}
 	}
 
@@ -160,10 +164,12 @@ func (s *Server) handleDashboardTest(w http.ResponseWriter, r *http.Request) {
 
 	data := detailData{
 		Test: testDetailItem{
-			Name:      test.Name,
-			State:     string(test.State),
-			Goal:      test.ConversionGoal,
-			CreatedAt: test.CreatedAt.Format("Jan 2, 2006"),
+			Name:              test.Name,
+			State:             string(test.State),
+			Goal:              test.ConversionGoal,
+			CreatedAt:         test.CreatedAt.Format("Jan 2, 2006"),
+			Source:            test.Source,
+			HasSourceConflict: test.HasSourceConflict,
 		},
 		Result: &detailResult{
 			Variants:       variants,

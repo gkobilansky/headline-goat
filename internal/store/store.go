@@ -11,6 +11,20 @@ type Store interface {
 	UpdateTestState(ctx context.Context, name string, state TestState, winnerVariant *int) error
 	DeleteTest(ctx context.Context, name string) error
 
+	// GetOrCreateTest returns existing test or creates new one with source="client"
+	// Used for auto-creating tests from client data attributes
+	// Returns: test, wasCreated, error
+	GetOrCreateTest(ctx context.Context, name string, variants []string) (*Test, bool, error)
+
+	// SetSourceConflict marks a test as having a source conflict
+	SetSourceConflict(ctx context.Context, name string, hasConflict bool) error
+
+	// GetTestsByURL returns all running tests matching a URL
+	GetTestsByURL(ctx context.Context, url string) ([]*Test, error)
+
+	// SetTestURLFields sets URL-related fields on a test
+	SetTestURLFields(ctx context.Context, name, url, target, ctaTarget, conversionURL string) error
+
 	// Event operations
 	RecordEvent(ctx context.Context, testName string, variant int, eventType string, visitorID string) error
 	GetVariantStats(ctx context.Context, testName string) ([]VariantStats, error)

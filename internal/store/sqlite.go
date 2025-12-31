@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -67,6 +68,22 @@ func Open(dbPath string) (*SQLiteStore, error) {
 		return nil, fmt.Errorf("failed to apply schema: %w", err)
 	}
 
+	// Apply migrations for new columns (ignore errors - column may already exist)
+	migrations := []string{
+		"ALTER TABLE tests ADD COLUMN source TEXT NOT NULL DEFAULT 'client'",
+		"ALTER TABLE tests ADD COLUMN has_source_conflict INTEGER NOT NULL DEFAULT 0",
+		"ALTER TABLE tests ADD COLUMN url TEXT",
+		"ALTER TABLE tests ADD COLUMN conversion_url TEXT",
+		"ALTER TABLE tests ADD COLUMN target TEXT",
+		"ALTER TABLE tests ADD COLUMN cta_target TEXT",
+	}
+	for _, m := range migrations {
+		db.Exec(m) // Ignore errors - column may already exist
+	}
+
+	// Add index for URL lookups
+	db.Exec("CREATE INDEX IF NOT EXISTS idx_tests_url ON tests(url)")
+
 	return &SQLiteStore{db: db}, nil
 }
 
@@ -75,6 +92,10 @@ func (s *SQLiteStore) Close() error {
 }
 
 func (s *SQLiteStore) CreateTest(ctx context.Context, name string, variants []string, weights []float64, conversionGoal string) (*Test, error) {
+	return s.createTestWithSource(ctx, name, variants, weights, conversionGoal, "server")
+}
+
+func (s *SQLiteStore) createTestWithSource(ctx context.Context, name string, variants []string, weights []float64, conversionGoal string, source string) (*Test, error) {
 	variantsJSON, err := json.Marshal(variants)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal variants: %w", err)
@@ -90,9 +111,9 @@ func (s *SQLiteStore) CreateTest(ctx context.Context, name string, variants []st
 
 	now := time.Now().Unix()
 	result, err := s.db.ExecContext(ctx,
-		`INSERT INTO tests (name, variants, weights, conversion_goal, state, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, 'running', ?, ?)`,
-		name, string(variantsJSON), nullableString(weightsJSON), conversionGoal, now, now,
+		`INSERT INTO tests (name, variants, weights, conversion_goal, state, source, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, 'running', ?, ?, ?)`,
+		name, string(variantsJSON), nullableString(weightsJSON), conversionGoal, source, now, now,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert test: %w", err)
@@ -110,6 +131,7 @@ func (s *SQLiteStore) CreateTest(ctx context.Context, name string, variants []st
 		Weights:        weights,
 		ConversionGoal: conversionGoal,
 		State:          StateRunning,
+		Source:         source,
 		CreatedAt:      time.Unix(now, 0),
 		UpdatedAt:      time.Unix(now, 0),
 	}, nil
@@ -120,12 +142,18 @@ func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
 	var variantsJSON string
 	var weightsJSON sql.NullString
 	var winnerVariant sql.NullInt64
+	var hasSourceConflict int64
+	var url, conversionURL, target, ctaTarget sql.NullString
 	var createdAt, updatedAt int64
 
 	err := s.db.QueryRowContext(ctx,
-		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant, created_at, updated_at
+		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
+		        source, has_source_conflict, url, conversion_url, target, cta_target,
+		        created_at, updated_at
 		 FROM tests WHERE name = ?`, name,
-	).Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant, &createdAt, &updatedAt)
+	).Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
+		&test.Source, &hasSourceConflict, &url, &conversionURL, &target, &ctaTarget,
+		&createdAt, &updatedAt)
 
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
@@ -149,6 +177,20 @@ func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
 		test.WinnerVariant = &w
 	}
 
+	test.HasSourceConflict = hasSourceConflict != 0
+	if url.Valid {
+		test.URL = url.String
+	}
+	if conversionURL.Valid {
+		test.ConversionURL = conversionURL.String
+	}
+	if target.Valid {
+		test.Target = target.String
+	}
+	if ctaTarget.Valid {
+		test.CTATarget = ctaTarget.String
+	}
+
 	test.CreatedAt = time.Unix(createdAt, 0)
 	test.UpdatedAt = time.Unix(updatedAt, 0)
 
@@ -157,7 +199,9 @@ func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
 
 func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant, created_at, updated_at
+		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
+		        source, has_source_conflict, url, conversion_url, target, cta_target,
+		        created_at, updated_at
 		 FROM tests ORDER BY created_at DESC`,
 	)
 	if err != nil {
@@ -171,9 +215,13 @@ func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
 		var variantsJSON string
 		var weightsJSON sql.NullString
 		var winnerVariant sql.NullInt64
+		var hasSourceConflict int64
+		var url, conversionURL, target, ctaTarget sql.NullString
 		var createdAt, updatedAt int64
 
-		err := rows.Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant, &createdAt, &updatedAt)
+		err := rows.Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
+			&test.Source, &hasSourceConflict, &url, &conversionURL, &target, &ctaTarget,
+			&createdAt, &updatedAt)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan test: %w", err)
 		}
@@ -191,6 +239,20 @@ func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
 		if winnerVariant.Valid {
 			w := int(winnerVariant.Int64)
 			test.WinnerVariant = &w
+		}
+
+		test.HasSourceConflict = hasSourceConflict != 0
+		if url.Valid {
+			test.URL = url.String
+		}
+		if conversionURL.Valid {
+			test.ConversionURL = conversionURL.String
+		}
+		if target.Valid {
+			test.Target = target.String
+		}
+		if ctaTarget.Valid {
+			test.CTATarget = ctaTarget.String
 		}
 
 		test.CreatedAt = time.Unix(createdAt, 0)
@@ -337,6 +399,169 @@ func (s *SQLiteStore) DB() *sql.DB {
 // SetWinner marks a test as completed with the specified winning variant
 func (s *SQLiteStore) SetWinner(ctx context.Context, testName string, variantIndex int) error {
 	return s.UpdateTestState(ctx, testName, StateCompleted, &variantIndex)
+}
+
+// GetOrCreateTest returns existing test or creates new one with source="client"
+// Used for auto-creating tests from client data attributes
+// Returns: test, wasCreated, error
+func (s *SQLiteStore) GetOrCreateTest(ctx context.Context, name string, variants []string) (*Test, bool, error) {
+	// Try to get existing test first
+	test, err := s.GetTest(ctx, name)
+	if err == nil {
+		return test, false, nil // exists, not created
+	}
+	if err != ErrNotFound {
+		return nil, false, err // real error
+	}
+
+	// Create new test with source=client
+	test, err = s.createTestWithSource(ctx, name, variants, nil, "", "client")
+	if err != nil {
+		// Handle race condition - another request may have created it
+		if containsUniqueConstraint(err) {
+			test, err = s.GetTest(ctx, name)
+			if err != nil {
+				return nil, false, err
+			}
+			return test, false, nil
+		}
+		return nil, false, err
+	}
+
+	return test, true, nil // created
+}
+
+// containsUniqueConstraint checks if error is a UNIQUE constraint violation
+func containsUniqueConstraint(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "UNIQUE constraint") || strings.Contains(errStr, "unique constraint")
+}
+
+// SetSourceConflict marks a test as having a source conflict
+func (s *SQLiteStore) SetSourceConflict(ctx context.Context, name string, hasConflict bool) error {
+	conflict := 0
+	if hasConflict {
+		conflict = 1
+	}
+	now := time.Now().Unix()
+	result, err := s.db.ExecContext(ctx,
+		"UPDATE tests SET has_source_conflict = ?, updated_at = ? WHERE name = ?",
+		conflict, now, name)
+	if err != nil {
+		return fmt.Errorf("failed to set source conflict: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+// GetTestsByURL returns all running tests matching a URL
+func (s *SQLiteStore) GetTestsByURL(ctx context.Context, url string) ([]*Test, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
+		        source, has_source_conflict, url, conversion_url, target, cta_target,
+		        created_at, updated_at
+		 FROM tests
+		 WHERE url = ? AND state = 'running'`,
+		url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query tests by URL: %w", err)
+	}
+	defer rows.Close()
+
+	var tests []*Test
+	for rows.Next() {
+		var test Test
+		var variantsJSON string
+		var weightsJSON sql.NullString
+		var winnerVariant sql.NullInt64
+		var hasSourceConflict int64
+		var urlVal, conversionURL, target, ctaTarget sql.NullString
+		var createdAt, updatedAt int64
+
+		err := rows.Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
+			&test.Source, &hasSourceConflict, &urlVal, &conversionURL, &target, &ctaTarget,
+			&createdAt, &updatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan test: %w", err)
+		}
+
+		if err := json.Unmarshal([]byte(variantsJSON), &test.Variants); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal variants: %w", err)
+		}
+
+		if weightsJSON.Valid && weightsJSON.String != "" {
+			if err := json.Unmarshal([]byte(weightsJSON.String), &test.Weights); err != nil {
+				return nil, fmt.Errorf("failed to unmarshal weights: %w", err)
+			}
+		}
+
+		if winnerVariant.Valid {
+			w := int(winnerVariant.Int64)
+			test.WinnerVariant = &w
+		}
+
+		test.HasSourceConflict = hasSourceConflict != 0
+		if urlVal.Valid {
+			test.URL = urlVal.String
+		}
+		if conversionURL.Valid {
+			test.ConversionURL = conversionURL.String
+		}
+		if target.Valid {
+			test.Target = target.String
+		}
+		if ctaTarget.Valid {
+			test.CTATarget = ctaTarget.String
+		}
+
+		test.CreatedAt = time.Unix(createdAt, 0)
+		test.UpdatedAt = time.Unix(updatedAt, 0)
+
+		tests = append(tests, &test)
+	}
+
+	return tests, rows.Err()
+}
+
+// SetTestURLFields sets URL-related fields on a test
+func (s *SQLiteStore) SetTestURLFields(ctx context.Context, name, url, target, ctaTarget, conversionURL string) error {
+	now := time.Now().Unix()
+	result, err := s.db.ExecContext(ctx,
+		`UPDATE tests SET url = ?, target = ?, cta_target = ?, conversion_url = ?, updated_at = ? WHERE name = ?`,
+		nullableStringPtr(url), nullableStringPtr(target), nullableStringPtr(ctaTarget), nullableStringPtr(conversionURL), now, name)
+	if err != nil {
+		return fmt.Errorf("failed to set URL fields: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return ErrNotFound
+	}
+
+	return nil
+}
+
+func nullableStringPtr(s string) sql.NullString {
+	if s == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: s, Valid: true}
 }
 
 func nullableString(b []byte) sql.NullString {

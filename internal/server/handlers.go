@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/headline-goat/headline-goat/internal/store"
 )
 
 type HealthResponse struct {
@@ -63,10 +65,12 @@ func getDBPath(db interface{}) string {
 
 // BeaconRequest represents an incoming beacon event
 type BeaconRequest struct {
-	TestName  string `json:"t"`
-	Variant   int    `json:"v"`
-	EventType string `json:"e"`
-	VisitorID string `json:"vid"`
+	TestName  string   `json:"t"`
+	Variant   int      `json:"v"`
+	EventType string   `json:"e"`
+	VisitorID string   `json:"vid"`
+	Source    string   `json:"src"`      // "client" or "server"
+	Variants  []string `json:"variants"` // For auto-creation
 }
 
 func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
@@ -105,17 +109,43 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 
-	// Validate test exists
-	test, err := s.store.GetTest(ctx, req.TestName)
-	if err != nil {
-		http.Error(w, "Test not found", http.StatusBadRequest)
-		return
+	// Get or create test
+	var test *store.Test
+	var err error
+
+	// Default source to "client" if not specified
+	if req.Source == "" {
+		req.Source = "client"
+	}
+
+	if len(req.Variants) > 0 && req.Source == "client" {
+		// Auto-create from client data attributes
+		var created bool
+		test, created, err = s.store.GetOrCreateTest(ctx, req.TestName, req.Variants)
+		if err != nil {
+			http.Error(w, "Failed to get or create test", http.StatusInternalServerError)
+			return
+		}
+		_ = created // Could log if needed
+	} else {
+		// Existing behavior - test must exist
+		test, err = s.store.GetTest(ctx, req.TestName)
+		if err != nil {
+			http.Error(w, "Test not found", http.StatusBadRequest)
+			return
+		}
 	}
 
 	// Validate variant in range
 	if req.Variant < 0 || req.Variant >= len(test.Variants) {
 		http.Error(w, "Invalid variant", http.StatusBadRequest)
 		return
+	}
+
+	// Check for source conflict (server-created test receiving client beacons)
+	if test.Source == "server" && req.Source == "client" && !test.HasSourceConflict {
+		// Mark conflict (ignore error, non-critical)
+		_ = s.store.SetSourceConflict(ctx, test.Name, true)
 	}
 
 	// Record event (deduplication handled by store)
@@ -125,5 +155,64 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// handleTestsAPI returns tests matching a URL for the global script
+func (s *Server) handleTestsAPI(w http.ResponseWriter, r *http.Request) {
+	// Set CORS headers
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	url := r.URL.Query().Get("url")
+	if url == "" {
+		http.Error(w, "url parameter required", http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+	tests, err := s.store.GetTestsByURL(ctx, url)
+	if err != nil {
+		http.Error(w, "Failed to fetch tests", http.StatusInternalServerError)
+		return
+	}
+
+	// Return minimal test data for client
+	type TestResponse struct {
+		Name          string   `json:"name"`
+		Variants      []string `json:"variants"`
+		Target        string   `json:"target,omitempty"`
+		CTATarget     string   `json:"cta_target,omitempty"`
+		ConversionURL string   `json:"conversion_url,omitempty"`
+	}
+
+	var response []TestResponse
+	for _, t := range tests {
+		response = append(response, TestResponse{
+			Name:          t.Name,
+			Variants:      t.Variants,
+			Target:        t.Target,
+			CTATarget:     t.CTATarget,
+			ConversionURL: t.ConversionURL,
+		})
+	}
+
+	// Return empty array instead of null
+	if response == nil {
+		response = []TestResponse{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 

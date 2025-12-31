@@ -6,7 +6,10 @@
   <a href="/dashboard/test/{{.Name}}" class="test-card">
     <div class="test-card-header">
       <span class="test-name">{{.Name}}</span>
-      <span class="state state-{{.State}}">{{.State}}</span>
+      <span>
+        {{if .HasSourceConflict}}<span style="background: #ffc107; color: #856404; padding: 2px 6px; border-radius: 3px; font-size: 0.75rem; margin-right: 0.5rem;">CONFLICT</span>{{end}}
+        <span class="state state-{{.State}}">{{.State}}</span>
+      </span>
     </div>
     <div class="test-meta">
       {{.VariantCount}} variants &middot; {{.TotalViews}} views &middot; {{.AvgConversionRate}} avg conversion
