@@ -1,31 +1,28 @@
 # headline-goat
 
-A/B test your headlines without the enterprise BS.
-
-Single binary. Zero dependencies. Self-hosted. **Ship in 30 seconds.**
+A/B test any text on any website. Minimal setup, maximum flexibility.
 
 ```bash
-# Create a test via CLI
+# Create a test via CLI - targets elements by CSS selector
 hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 
 # Or define tests inline with data attributes
 <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>Ship Faster</h1>
 ```
 
-Two ways to create tests. Same powerful results. View stats in the dashboard or CLI.
+Single Go binary with embedded SQLite. No external services, no dependencies.
 
 ---
 
-## Why headline-goat?
+## What makes it useful
 
-You want to know which headline converts better. You don't want:
+**Test any text element** — Headlines, subheadings, CTAs, value props. If it's text, you can test it.
 
-- Monthly SaaS fees for something this simple
-- Complex SDKs with 47 configuration options
-- Your visitor data sitting on someone else's server
-- A "free tier" that expires right when you need it
+**Two ways to define tests** — Use CLI commands when you want centralized control, or data attributes when you want tests defined alongside the markup. Mix both approaches on the same site.
 
-headline-goat is a single Go binary with embedded SQLite. Download it, run it, own your data forever.
+**Minimal by design** — ~2000 lines of Go. Easy to read, easy to understand, easy to extend. The entire codebase fits in your head.
+
+**Self-hosted** — Your data stays on your server. Run it locally, on a VPS, or behind a tunnel.
 
 ---
 
@@ -272,7 +269,7 @@ function Hero() {
 
 ## Deployment
 
-headline-goat needs to be accessible from your website. Pick your poison:
+headline-goat needs to be accessible from your website. A few options:
 
 ### Cloudflare Tunnel (quickest)
 
@@ -321,27 +318,17 @@ No more "this variant is winning" with 12 visits.
 
 ---
 
-## AI Coding Agent Friendly
+## Works with AI Coding Assistants
 
-headline-goat's simple CLI makes it trivial for AI coding assistants to help you set up and manage tests.
-
-**Works great with Claude Code, Cursor, Copilot, and other AI tools:**
+The CLI is just shell commands, so AI tools like Claude Code, Cursor, or Copilot can help you manage tests:
 
 ```
-You: "Set up an A/B test for the hero headline on the homepage"
+You: "Create an A/B test for the homepage hero"
 
-Claude: hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
-        Done. Check results with: hlg results hero
+AI: hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 ```
 
-No complex APIs or authentication flows. Just shell commands that any coding agent can execute. Ask your AI to:
-
-- Create tests targeting specific elements
-- Check which variants are winning
-- Export data for analysis
-- Declare winners when significance is reached
-
-The CLI outputs clean, parseable text that AI tools understand.
+Create tests, check results, export data, declare winners — all through simple commands.
 
 ---
 
@@ -384,8 +371,4 @@ Yes. Each `data-hlg-name` is independent.
 
 ## License
 
-MIT. Do whatever you want.
-
----
-
-Built for indie hackers who ship.
+MIT
