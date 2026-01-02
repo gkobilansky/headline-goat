@@ -16,7 +16,7 @@ Single Go binary with embedded SQLite. No external services, no dependencies.
 - Add `<script src='…/hlg.js'>` to your site and mark any text with `data-hlg-name` and `data-hlg-variants`. 
 - The script assigns a variant, records views/conversions to SQLite, and you inspect results via CLI or dashboard.
 - You can also predefine tests in the DB with URL/selector targeting.
-- No external services—just Go + SQLite.
+- No external services, just Go + SQLite.
 
 ---
 
