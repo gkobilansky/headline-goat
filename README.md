@@ -34,21 +34,18 @@ Single Go binary with embedded SQLite. No external services, no dependencies.
 
 ## Quick Start
 
-### 1. Get the binary
+### 1. Install
 
 ```bash
-# Download latest release (macOS ARM)
-curl -L -o hlg https://github.com/gkobilansky/headline-goat/releases/latest/download/hlg-darwin-arm64
-chmod +x hlg
-
-# Or build from source
 go install github.com/gkobilansky/headline-goat/cmd/hlg@latest
 ```
+
+This puts `hlg` in your `$GOPATH/bin` (usually `~/go/bin`). Make sure it's in your PATH.
 
 ### 2. Start the server
 
 ```bash
-./hlg
+hlg
 ```
 
 You'll see setup prompts and get a dashboard URL with your access token.
@@ -83,7 +80,7 @@ Use CLI when you want central control or can't easily edit HTML. Use data attrib
 ### 5. Watch the results
 
 ```bash
-./hlg results hero
+hlg results hero
 ```
 
 ```
@@ -340,7 +337,7 @@ headline-goat needs to be accessible from your website. A few options:
 
 ```bash
 # Terminal 1
-./hlg
+hlg
 
 # Terminal 2
 cloudflared tunnel --url http://localhost:8080
@@ -359,7 +356,7 @@ fly deploy
 
 ```bash
 # On your server
-./hlg --port 8080 --db /var/lib/hlg/data.db
+hlg --port 8080 --db /var/lib/hlg/data.db
 ```
 
 ```
