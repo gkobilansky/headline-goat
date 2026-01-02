@@ -106,9 +106,68 @@ Tests auto-create on first beacon. No pre-registration needed.
 
 ---
 
+## Architecture
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│  /hlg.js    │────▶│  /b beacon  │────▶│   SQLite    │
+│  (browser)  │     │  endpoint   │     │   database  │
+└─────────────┘     └─────────────┘     └─────────────┘
+                                               │
+                                               ▼
+                    ┌─────────────┐     ┌─────────────┐
+                    │  Dashboard  │◀────│   Stats     │
+                    │  /dashboard │     │  (Wilson)   │
+                    └─────────────┘     └─────────────┘
+```
+
+**Key components:**
+
+| Path | Purpose |
+|------|---------|
+| `cmd/hlg/` | CLI entry point |
+| `internal/cli/` | Command implementations |
+| `internal/server/` | HTTP handlers, `/hlg.js` generation |
+| `internal/store/` | SQLite database layer |
+| `internal/stats/` | Wilson intervals, z-test significance |
+| `internal/dashboard/` | Embedded HTML/CSS templates |
+
+Everything compiles into a single binary (~8MB). No runtime dependencies.
+
+---
+
+## Dashboard
+
+The dashboard shows all tests, conversion rates, and statistical significance.
+
+**Authentication:** Token-based. On first startup, hlg generates an 8-character token stored in `.hlg-token` alongside your database.
+
+```bash
+# Get your dashboard URL anytime
+hlg token
+# → Dashboard: http://localhost:8080/dashboard?token=a1b2c3d4
+```
+
+First visit with `?token=` sets a cookie (24h). After that, the cookie handles auth automatically.
+
+---
+
 ## Creating Tests
 
 Two approaches, same results. Pick what fits your workflow.
+
+### How they differ
+
+| | CLI tests | Data attribute tests |
+|---|-----------|---------------------|
+| **Created** | `hlg create` command | Auto-created on first page view |
+| **Targeting** | CSS selectors (`--target "h1"`) | Element has the attributes |
+| **Variants stored** | In database | In HTML (sent with beacon) |
+| **Source** | `server` | `client` |
+
+Both methods work. You can even mix them — use CLI for some tests, data attributes for others. The `hlg list` command shows the source for each test.
+
+**Note:** If you create a test via CLI and also have data attributes for the same test name, the dashboard will flag a "source conflict." This isn't an error — just a heads-up that the test has mixed origins.
 
 ### Option A: CLI (centralized control)
 
@@ -368,6 +427,22 @@ Until you hit 95% confidence. The CLI and dashboard tell you when you're there.
 **Can I run multiple tests on one page?**
 
 Yes. Each `data-hlg-name` is independent.
+
+---
+
+## Contributing
+
+headline-goat follows strict TDD. Every change needs a failing test first.
+
+```bash
+# Run tests (required before every commit)
+go test ./... -v -race
+
+# Build
+go build -o hlg ./cmd/hlg
+```
+
+See `CLAUDE.md` for development guidelines and architecture details.
 
 ---
 
