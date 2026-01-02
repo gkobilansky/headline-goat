@@ -15,6 +15,9 @@
 .idea/
 .vscode/
 *.swp
+.claude/
+CLAUDE.md
+thoughts/
 
 # OS
 .DS_Store
