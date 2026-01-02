@@ -4,7 +4,7 @@ A/B test any text on any website. Minimal setup, maximum flexibility.
 
 ```bash
 # Create a test via CLI - targets elements by CSS selector
-./hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
+hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 
 # Or define tests inline with data attributes
 <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>Ship Faster</h1>
@@ -12,7 +12,7 @@ A/B test any text on any website. Minimal setup, maximum flexibility.
 
 Single Go binary with embedded SQLite. No external services, no dependencies.
 
-- Run `./hlg` to serve global script
+- Run `hlg` to serve global script
 - Add `<script src='…/hlg.js'>` to your site and mark any text with `data-hlg-name` and `data-hlg-variants`. 
 - The script assigns a variant, records views/conversions to SQLite, and you inspect results via CLI or dashboard.
 - You can also predefine tests in the DB with URL/selector targeting.
