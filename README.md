@@ -4,7 +4,7 @@ A/B test any text on any website. Minimal setup, maximum flexibility.
 
 ```bash
 # Create a test via CLI - targets elements by CSS selector
-hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
+./hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 
 # Or define tests inline with data attributes
 <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>Ship Faster</h1>
