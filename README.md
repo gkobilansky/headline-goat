@@ -152,15 +152,26 @@ cloudflared tunnel --url http://localhost:8080
 # Gives you https://random-words.trycloudflare.com
 ```
 
-### Fly.io (if you need a separate server)
+### Docker (for container hosts)
+
+A `Dockerfile` is included for deploying to Fly.io, Railway, Render, or any Docker host.
+
+```bash
+# Build and run locally
+docker build -t hlg .
+docker run -p 8080:8080 -v hlg-data:/data hlg
+```
+
+**Fly.io:**
 
 ```bash
 fly launch --name my-headline-goat
+fly volumes create hlg_data --size 1
 fly deploy
 # Gives you https://my-headline-goat.fly.dev
 ```
 
-**Other options:** Railway, Render, DigitalOcean App Platform, or any Docker host.
+**Railway / Render:** Connect your repo and they'll auto-detect the Dockerfile.
 
 ---
 
