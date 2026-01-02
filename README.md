@@ -24,7 +24,7 @@ Single Go binary with embedded SQLite. No external services, no dependencies.
 
 **Test any text element** — Headlines, subheadings, CTAs, value props. If it's text, you can test it.
 
-**Two ways to define tests** — Use CLI commands when you want centralized control, or data attributes when you want tests defined alongside the markup. Mix both approaches on the same site.
+**Two ways to define tests** — Use CLI commands when you want centralized control, or data attributes when you want tests defined alongside the markup. Mix both approaches for the same test.
 
 **Minimal by design** — ~2000 lines of Go. Easy to read, easy to understand, easy to extend. The entire codebase fits in your head.
 
