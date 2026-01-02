@@ -330,6 +330,8 @@ AI: hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1
 
 Create tests, check results, export data, declare winners — all through simple commands.
 
+**Claude Code users:** You can create a [Skill](https://docs.anthropic.com/en/docs/claude-code/skills) to teach Claude about hlg. Add a `SKILL.md` file to `.claude/skills/hlg/` with the command reference, and Claude will automatically know when and how to manage your tests.
+
 ---
 
 ## Configuration
