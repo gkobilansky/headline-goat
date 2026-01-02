@@ -12,7 +12,8 @@ A/B test any text on any website. Minimal setup, maximum flexibility.
 
 Single Go binary with embedded SQLite. No external services, no dependencies.
 
-- Run `./hlg`, drop <script src='…/hlg.js'> on your site, and mark any text with data-hlg-name/data-hlg-variants. 
+- Run `./hlg` to serve global script
+- Drop <script src='…/hlg.js'> on your site and mark any text with `data-hlg-name` and `data-hlg-variants`. 
 - The script assigns a variant, records views/conversions to SQLite, and you inspect results via CLI or dashboard.
 - You can also predefine tests in the DB with URL/selector targeting.
 - No external services—just Go + SQLite.
