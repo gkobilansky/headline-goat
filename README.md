@@ -109,6 +109,61 @@ Tests auto-create on first beacon. No pre-registration needed.
 
 ---
 
+## Deployment
+
+Headline Goat needs a persistent process and SQLite storage, eg a VPS, container host, or local machine.
+
+### Same server vs. separate
+
+| | Same Server | Separate (Fly.io, etc.) |
+|---|-------------|-------------------------|
+| **Complexity** | One thing to manage | Two servers |
+| **Cost** | Free | $3-5/mo |
+| **Latency** | Fastest | Extra hop |
+| **CORS** | None | Works, but extra headers |
+
+**Recommendation:** Run on the same server as your website if you can. Headline Goat is tiny (~8MB, minimal CPU/RAM) and won't compete for resources. Use a separate server only if you're on a serverless platform and have no choice.
+
+### Same server (recommended)
+
+Run hlg alongside your website and route via nginx or Caddy:
+
+```nginx
+# nginx - route hlg endpoints to the binary
+location ~ ^/(hlg\.js|b|dashboard) {
+    proxy_pass http://localhost:8080;
+}
+```
+
+```html
+<script src="/hlg.js" defer></script>
+```
+
+No CORS, same domain, clean URLs.
+
+### Cloudflare Tunnel (quickest for development)
+
+```bash
+# Terminal 1
+hlg
+
+# Terminal 2
+cloudflared tunnel --url http://localhost:8080
+# Gives you https://random-words.trycloudflare.com
+```
+
+### Fly.io (if you need a separate server)
+
+```bash
+fly launch --name my-headline-goat
+fly deploy
+# Gives you https://my-headline-goat.fly.dev
+```
+
+**Other options:** Railway, Render, DigitalOcean App Platform, or any Docker host.
+
+---
+
 ## Architecture
 
 ```
@@ -151,7 +206,7 @@ hlg token
 # → Dashboard: http://localhost:8080/dashboard?token=a1b2c3d4
 ```
 
-First visit with `?token=` sets a cookie (24h). After that, the cookie handles auth automatically.
+First visit with `?token=` sets an auth cookie (24h).
 
 ---
 
@@ -168,7 +223,8 @@ Two approaches, same results. Pick what fits your workflow.
 | **Variants stored** | In database | In HTML (sent with beacon) |
 | **Source** | `server` | `client` |
 
-Both methods work. You can even mix them — use CLI for some tests, data attributes for others. The `hlg list` command shows the source for each test.
+Both methods work. You can even mix them — use CLI to create the test and set `--conversion-url`, use data attributes to define variants. 
+The `hlg list` command shows the source for each test.
 
 **Note:** If you create a test via CLI and also have data attributes for the same test name, the dashboard will flag a "source conflict." This isn't an error — just a heads-up that the test has mixed origins.
 
@@ -219,6 +275,18 @@ Define tests directly in your HTML:
 **Best for:** Self-documenting tests, quick iteration, tests defined where they're used.
 
 ### Tracking Conversions
+
+**Via CLI:**
+
+```bash
+# Convert when user reaches a thank-you page
+hlg create hero --variants "A,B" --conversion-url "/thanks"
+
+# Convert on button click (CSS selector)
+hlg create hero --variants "A,B" --cta-target "button.signup"
+```
+
+**Via data attributes:**
 
 ```html
 <!-- Click conversion (buttons, links) -->
@@ -325,45 +393,6 @@ function Hero() {
   Ship Faster
 </h1>
 <button data-hlg-convert="hero">Sign Up</button>
-```
-
----
-
-## Deployment
-
-headline-goat needs to be accessible from your website. A few options:
-
-### Cloudflare Tunnel (quickest)
-
-```bash
-# Terminal 1
-hlg
-
-# Terminal 2
-cloudflared tunnel --url http://localhost:8080
-# Gives you https://random-words.trycloudflare.com
-```
-
-### Fly.io (production-ready)
-
-```bash
-fly launch --name my-headline-goat
-fly deploy
-# Gives you https://my-headline-goat.fly.dev
-```
-
-### Any VPS + Caddy
-
-```bash
-# On your server
-hlg --port 8080 --db /var/lib/hlg/data.db
-```
-
-```
-# Caddyfile
-hlg.yourdomain.com {
-  reverse_proxy localhost:8080
-}
 ```
 
 ---
