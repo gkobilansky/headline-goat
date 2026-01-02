@@ -1,4 +1,4 @@
-# headline-goat
+# 🐐 Headline Goat
 
 A/B test any text on any website. Minimal setup, maximum flexibility.
 
@@ -11,6 +11,11 @@ hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 ```
 
 Single Go binary with embedded SQLite. No external services, no dependencies.
+
+- Run `./hlg`, drop <script src='…/hlg.js'> on your site, and mark any text with data-hlg-name/data-hlg-variants. 
+- The script assigns a variant, records views/conversions to SQLite, and you inspect results via CLI or dashboard.
+- You can also predefine tests in the DB with URL/selector targeting.
+- No external services—just Go + SQLite.
 
 ---
 
