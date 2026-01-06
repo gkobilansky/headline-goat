@@ -143,23 +143,14 @@ func (s *SQLiteStore) createTestWithSource(ctx context.Context, name string, var
 }
 
 func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
-	var test Test
-	var variantsJSON string
-	var weightsJSON sql.NullString
-	var winnerVariant sql.NullInt64
-	var hasSourceConflict int64
-	var url, conversionURL, target, ctaTarget sql.NullString
-	var createdAt, updatedAt int64
-
-	err := s.db.QueryRowContext(ctx,
+	row := s.db.QueryRowContext(ctx,
 		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
 		        source, has_source_conflict, url, conversion_url, target, cta_target,
 		        created_at, updated_at
 		 FROM tests WHERE name = ?`, name,
-	).Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
-		&test.Source, &hasSourceConflict, &url, &conversionURL, &target, &ctaTarget,
-		&createdAt, &updatedAt)
+	)
 
+	test, err := scanTest(row)
 	if err == sql.ErrNoRows {
 		return nil, ErrNotFound
 	}
@@ -167,39 +158,7 @@ func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
 		return nil, fmt.Errorf("failed to get test: %w", err)
 	}
 
-	if err := json.Unmarshal([]byte(variantsJSON), &test.Variants); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal variants: %w", err)
-	}
-
-	if weightsJSON.Valid && weightsJSON.String != "" {
-		if err := json.Unmarshal([]byte(weightsJSON.String), &test.Weights); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal weights: %w", err)
-		}
-	}
-
-	if winnerVariant.Valid {
-		w := int(winnerVariant.Int64)
-		test.WinnerVariant = &w
-	}
-
-	test.HasSourceConflict = hasSourceConflict != 0
-	if url.Valid {
-		test.URL = url.String
-	}
-	if conversionURL.Valid {
-		test.ConversionURL = conversionURL.String
-	}
-	if target.Valid {
-		test.Target = target.String
-	}
-	if ctaTarget.Valid {
-		test.CTATarget = ctaTarget.String
-	}
-
-	test.CreatedAt = time.Unix(createdAt, 0)
-	test.UpdatedAt = time.Unix(updatedAt, 0)
-
-	return &test, nil
+	return test, nil
 }
 
 func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
@@ -216,54 +175,11 @@ func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
 
 	var tests []*Test
 	for rows.Next() {
-		var test Test
-		var variantsJSON string
-		var weightsJSON sql.NullString
-		var winnerVariant sql.NullInt64
-		var hasSourceConflict int64
-		var url, conversionURL, target, ctaTarget sql.NullString
-		var createdAt, updatedAt int64
-
-		err := rows.Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
-			&test.Source, &hasSourceConflict, &url, &conversionURL, &target, &ctaTarget,
-			&createdAt, &updatedAt)
+		test, err := scanTest(rows)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan test: %w", err)
 		}
-
-		if err := json.Unmarshal([]byte(variantsJSON), &test.Variants); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal variants: %w", err)
-		}
-
-		if weightsJSON.Valid && weightsJSON.String != "" {
-			if err := json.Unmarshal([]byte(weightsJSON.String), &test.Weights); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal weights: %w", err)
-			}
-		}
-
-		if winnerVariant.Valid {
-			w := int(winnerVariant.Int64)
-			test.WinnerVariant = &w
-		}
-
-		test.HasSourceConflict = hasSourceConflict != 0
-		if url.Valid {
-			test.URL = url.String
-		}
-		if conversionURL.Valid {
-			test.ConversionURL = conversionURL.String
-		}
-		if target.Valid {
-			test.Target = target.String
-		}
-		if ctaTarget.Valid {
-			test.CTATarget = ctaTarget.String
-		}
-
-		test.CreatedAt = time.Unix(createdAt, 0)
-		test.UpdatedAt = time.Unix(updatedAt, 0)
-
-		tests = append(tests, &test)
+		tests = append(tests, test)
 	}
 
 	return tests, nil
@@ -487,54 +403,11 @@ func (s *SQLiteStore) GetTestsByURL(ctx context.Context, url string) ([]*Test, e
 
 	var tests []*Test
 	for rows.Next() {
-		var test Test
-		var variantsJSON string
-		var weightsJSON sql.NullString
-		var winnerVariant sql.NullInt64
-		var hasSourceConflict int64
-		var urlVal, conversionURL, target, ctaTarget sql.NullString
-		var createdAt, updatedAt int64
-
-		err := rows.Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
-			&test.Source, &hasSourceConflict, &urlVal, &conversionURL, &target, &ctaTarget,
-			&createdAt, &updatedAt)
+		test, err := scanTest(rows)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan test: %w", err)
 		}
-
-		if err := json.Unmarshal([]byte(variantsJSON), &test.Variants); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal variants: %w", err)
-		}
-
-		if weightsJSON.Valid && weightsJSON.String != "" {
-			if err := json.Unmarshal([]byte(weightsJSON.String), &test.Weights); err != nil {
-				return nil, fmt.Errorf("failed to unmarshal weights: %w", err)
-			}
-		}
-
-		if winnerVariant.Valid {
-			w := int(winnerVariant.Int64)
-			test.WinnerVariant = &w
-		}
-
-		test.HasSourceConflict = hasSourceConflict != 0
-		if urlVal.Valid {
-			test.URL = urlVal.String
-		}
-		if conversionURL.Valid {
-			test.ConversionURL = conversionURL.String
-		}
-		if target.Valid {
-			test.Target = target.String
-		}
-		if ctaTarget.Valid {
-			test.CTATarget = ctaTarget.String
-		}
-
-		test.CreatedAt = time.Unix(createdAt, 0)
-		test.UpdatedAt = time.Unix(updatedAt, 0)
-
-		tests = append(tests, &test)
+		tests = append(tests, test)
 	}
 
 	return tests, rows.Err()
@@ -574,6 +447,63 @@ func nullableString(b []byte) sql.NullString {
 		return sql.NullString{}
 	}
 	return sql.NullString{String: string(b), Valid: true}
+}
+
+// scanner interface for both *sql.Row and *sql.Rows
+type scanner interface {
+	Scan(dest ...interface{}) error
+}
+
+// scanTest scans a test row and unmarshals JSON fields
+func scanTest(s scanner) (*Test, error) {
+	var test Test
+	var variantsJSON string
+	var weightsJSON sql.NullString
+	var winnerVariant sql.NullInt64
+	var hasSourceConflict int64
+	var url, conversionURL, target, ctaTarget sql.NullString
+	var createdAt, updatedAt int64
+
+	err := s.Scan(&test.ID, &test.Name, &variantsJSON, &weightsJSON, &test.ConversionGoal, &test.State, &winnerVariant,
+		&test.Source, &hasSourceConflict, &url, &conversionURL, &target, &ctaTarget,
+		&createdAt, &updatedAt)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal([]byte(variantsJSON), &test.Variants); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal variants: %w", err)
+	}
+
+	if weightsJSON.Valid && weightsJSON.String != "" {
+		if err := json.Unmarshal([]byte(weightsJSON.String), &test.Weights); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal weights: %w", err)
+		}
+	}
+
+	if winnerVariant.Valid {
+		w := int(winnerVariant.Int64)
+		test.WinnerVariant = &w
+	}
+
+	test.HasSourceConflict = hasSourceConflict != 0
+	if url.Valid {
+		test.URL = url.String
+	}
+	if conversionURL.Valid {
+		test.ConversionURL = conversionURL.String
+	}
+	if target.Valid {
+		test.Target = target.String
+	}
+	if ctaTarget.Valid {
+		test.CTATarget = ctaTarget.String
+	}
+
+	test.CreatedAt = time.Unix(createdAt, 0)
+	test.UpdatedAt = time.Unix(updatedAt, 0)
+
+	return &test, nil
 }
 
 // SetSetting stores a key-value setting (upserts)
