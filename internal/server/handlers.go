@@ -10,6 +10,32 @@ import (
 	"github.com/headline-goat/headline-goat/internal/store"
 )
 
+// setCORS sets standard CORS headers for cross-origin requests.
+func setCORS(w http.ResponseWriter, methods string) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", methods)
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+}
+
+// handlePreflight handles OPTIONS preflight requests and returns true if handled.
+func handlePreflight(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusNoContent)
+		return true
+	}
+	return false
+}
+
+// requireMethod checks if the request method matches and sends 405 if not.
+// Returns true if the method matches, false if an error response was sent.
+func requireMethod(w http.ResponseWriter, r *http.Request, method string) bool {
+	if r.Method != method {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return false
+	}
+	return true
+}
+
 type HealthResponse struct {
 	Status        string `json:"status"`
 	TestsCount    int    `json:"tests_count"`
@@ -18,8 +44,7 @@ type HealthResponse struct {
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
 
@@ -74,19 +99,13 @@ type BeaconRequest struct {
 }
 
 func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers for all responses
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	setCORS(w, "POST, OPTIONS")
 
-	// Handle preflight
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
+	if handlePreflight(w, r) {
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !requireMethod(w, r, http.MethodPost) {
 		return
 	}
 
@@ -159,18 +178,13 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 
 // handleTestsAPI returns tests matching a URL for the global script
 func (s *Server) handleTestsAPI(w http.ResponseWriter, r *http.Request) {
-	// Set CORS headers
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	setCORS(w, "GET, OPTIONS")
 
-	if r.Method == http.MethodOptions {
-		w.WriteHeader(http.StatusNoContent)
+	if handlePreflight(w, r) {
 		return
 	}
 
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
 

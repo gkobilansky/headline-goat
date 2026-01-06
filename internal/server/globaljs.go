@@ -7,8 +7,7 @@ import (
 
 // handleGlobalJS serves the global headline-goat script
 func (s *Server) handleGlobalJS(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !requireMethod(w, r, http.MethodGet) {
 		return
 	}
 
