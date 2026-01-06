@@ -5,11 +5,11 @@ import (
 	"testing"
 
 	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/headline-goat/headline-goat/tests/testutil"
 )
 
 func TestSetSetting(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	err := s.SetSetting(ctx, "server_url", "https://ab.example.com")
@@ -19,8 +19,7 @@ func TestSetSetting(t *testing.T) {
 }
 
 func TestGetSetting(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
@@ -42,8 +41,7 @@ func TestGetSetting(t *testing.T) {
 }
 
 func TestGetSetting_NotFound(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.GetSetting(ctx, "nonexistent")
@@ -53,8 +51,7 @@ func TestGetSetting_NotFound(t *testing.T) {
 }
 
 func TestSetSetting_Update(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
@@ -82,8 +79,7 @@ func TestSetSetting_Update(t *testing.T) {
 }
 
 func TestGetSettings_Multiple(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 

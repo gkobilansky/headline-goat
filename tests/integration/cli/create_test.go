@@ -5,17 +5,11 @@ import (
 	"testing"
 
 	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/headline-goat/headline-goat/tests/testutil"
 )
 
 func TestCreateTest_Success(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
@@ -48,19 +42,12 @@ func TestCreateTest_Success(t *testing.T) {
 }
 
 func TestCreateTest_DuplicateName(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
 	// Create first test
-	_, err = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
+	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
 	if err != nil {
 		t.Fatalf("first CreateTest failed: %v", err)
 	}
@@ -73,19 +60,12 @@ func TestCreateTest_DuplicateName(t *testing.T) {
 }
 
 func TestCreateTest_VerifyInList(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
 	// Create test
-	_, err = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
+	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
 	if err != nil {
 		t.Fatalf("CreateTest failed: %v", err)
 	}
@@ -106,14 +86,7 @@ func TestCreateTest_VerifyInList(t *testing.T) {
 }
 
 func TestCreateTest_ThreeVariants(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 

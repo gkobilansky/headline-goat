@@ -4,18 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/headline-goat/headline-goat/tests/testutil"
 )
 
 func TestGetOrCreateTest_CreatesNew(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
@@ -43,19 +36,12 @@ func TestGetOrCreateTest_CreatesNew(t *testing.T) {
 }
 
 func TestGetOrCreateTest_ReturnsExisting(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
 	// Create test first via CLI (source=server)
-	_, err = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
+	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
 	if err != nil {
 		t.Fatalf("CreateTest failed: %v", err)
 	}
@@ -82,14 +68,7 @@ func TestGetOrCreateTest_ReturnsExisting(t *testing.T) {
 }
 
 func TestCreateTest_HasServerSource(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
@@ -115,19 +94,12 @@ func TestCreateTest_HasServerSource(t *testing.T) {
 }
 
 func TestSetSourceConflict(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
 	// Create test
-	_, err = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
+	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
 	if err != nil {
 		t.Fatalf("CreateTest failed: %v", err)
 	}
@@ -161,14 +133,7 @@ func TestSetSourceConflict(t *testing.T) {
 }
 
 func TestNewColumnsDefault(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 

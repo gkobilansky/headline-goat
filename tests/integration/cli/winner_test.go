@@ -5,21 +5,14 @@ import (
 	"testing"
 
 	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/headline-goat/headline-goat/tests/testutil"
 )
 
 func TestSetWinner_Success(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	// Setup: create a test
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
-	_, err = s.CreateTest(ctx, "hero", []string{"Ship Faster", "Build Better"}, nil, "")
+	_, err := s.CreateTest(ctx, "hero", []string{"Ship Faster", "Build Better"}, nil, "")
 	if err != nil {
 		t.Fatalf("failed to create test: %v", err)
 	}
@@ -50,19 +43,12 @@ func TestSetWinner_Success(t *testing.T) {
 }
 
 func TestSetWinner_TestNotFound(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 
 	// Try to set winner for non-existent test
-	err = s.SetWinner(ctx, "nonexistent", 0)
+	err := s.SetWinner(ctx, "nonexistent", 0)
 	if err == nil {
 		t.Error("expected SetWinner to fail for non-existent test")
 	}
@@ -73,17 +59,10 @@ func TestSetWinner_TestNotFound(t *testing.T) {
 }
 
 func TestSetWinner_MultipleTimes(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
-	_, err = s.CreateTest(ctx, "hero", []string{"A", "B", "C"}, nil, "")
+	_, err := s.CreateTest(ctx, "hero", []string{"A", "B", "C"}, nil, "")
 	if err != nil {
 		t.Fatalf("failed to create test: %v", err)
 	}
@@ -108,14 +87,7 @@ func TestSetWinner_MultipleTimes(t *testing.T) {
 }
 
 func TestWinnerStateTransition(t *testing.T) {
-	tmpDir := t.TempDir()
-	dbPath := tmpDir + "/test.db"
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		t.Fatalf("failed to open store: %v", err)
-	}
-	defer s.Close()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	test, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")

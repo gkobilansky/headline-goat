@@ -2,38 +2,14 @@ package store_test
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/headline-goat/headline-goat/tests/testutil"
 )
 
-func setupTestDB(t *testing.T) (*store.SQLiteStore, func()) {
-	t.Helper()
-	tmpDir, err := os.MkdirTemp("", "headline-goat-test")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
-	}
-	dbPath := filepath.Join(tmpDir, "test.db")
-
-	s, err := store.Open(dbPath)
-	if err != nil {
-		os.RemoveAll(tmpDir)
-		t.Fatalf("failed to open store: %v", err)
-	}
-
-	cleanup := func() {
-		s.Close()
-		os.RemoveAll(tmpDir)
-	}
-
-	return s, cleanup
-}
-
 func TestOpen(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	if s == nil {
 		t.Fatal("expected non-nil store")
@@ -41,8 +17,7 @@ func TestOpen(t *testing.T) {
 }
 
 func TestCreateTest(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	test, err := s.CreateTest(ctx, "hero", []string{"A", "B", "C"}, nil, "")
@@ -65,8 +40,7 @@ func TestCreateTest(t *testing.T) {
 }
 
 func TestCreateTest_WithWeightsAndGoal(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	weights := []float64{0.5, 0.3, 0.2}
@@ -87,8 +61,7 @@ func TestCreateTest_WithWeightsAndGoal(t *testing.T) {
 }
 
 func TestCreateTest_DuplicateName(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -103,8 +76,7 @@ func TestCreateTest_DuplicateName(t *testing.T) {
 }
 
 func TestGetTest(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "Click the button")
@@ -126,8 +98,7 @@ func TestGetTest(t *testing.T) {
 }
 
 func TestGetTest_NotFound(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.GetTest(ctx, "nonexistent")
@@ -137,8 +108,7 @@ func TestGetTest_NotFound(t *testing.T) {
 }
 
 func TestListTests(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, _ = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -155,8 +125,7 @@ func TestListTests(t *testing.T) {
 }
 
 func TestUpdateTestState(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -184,8 +153,7 @@ func TestUpdateTestState(t *testing.T) {
 }
 
 func TestDeleteTest(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -205,8 +173,7 @@ func TestDeleteTest(t *testing.T) {
 }
 
 func TestRecordEvent(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -226,8 +193,7 @@ func TestRecordEvent(t *testing.T) {
 }
 
 func TestRecordEvent_Deduplication(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -253,8 +219,7 @@ func TestRecordEvent_Deduplication(t *testing.T) {
 }
 
 func TestGetVariantStats(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
@@ -305,8 +270,7 @@ func TestGetVariantStats(t *testing.T) {
 }
 
 func TestGetEvents(t *testing.T) {
-	s, cleanup := setupTestDB(t)
-	defer cleanup()
+	s := testutil.SetupTestStore(t)
 
 	ctx := context.Background()
 	_, err := s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
