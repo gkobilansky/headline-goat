@@ -27,42 +27,37 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			testName := args[0]
 
-			dbPath, _ := cmd.Flags().GetString("db")
-			s, err := store.Open(dbPath)
-			if err != nil {
-				return fmt.Errorf("failed to open database: %w", err)
-			}
-			defer s.Close()
+			return withStore(func(s *store.SQLiteStore) error {
+				ctx := context.Background()
+				test, err := s.GetTest(ctx, testName)
+				if err != nil {
+					return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", testName)
+				}
 
-			ctx := context.Background()
-			test, err := s.GetTest(ctx, testName)
-			if err != nil {
-				return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", testName)
-			}
+				// Validate test is running
+				if test.State != store.StateRunning {
+					return fmt.Errorf("test '%s' is already %s", testName, test.State)
+				}
 
-			// Validate test is running
-			if test.State != store.StateRunning {
-				return fmt.Errorf("test '%s' is already %s", testName, test.State)
-			}
+				// Validate variant index
+				if variantIndex < 0 || variantIndex >= len(test.Variants) {
+					return fmt.Errorf("variant %d doesn't exist. Test '%s' has variants 0-%d", variantIndex, testName, len(test.Variants)-1)
+				}
 
-			// Validate variant index
-			if variantIndex < 0 || variantIndex >= len(test.Variants) {
-				return fmt.Errorf("variant %d doesn't exist. Test '%s' has variants 0-%d", variantIndex, testName, len(test.Variants)-1)
-			}
+				// Set winner
+				err = s.SetWinner(ctx, testName, variantIndex)
+				if err != nil {
+					return fmt.Errorf("failed to set winner: %w", err)
+				}
 
-			// Set winner
-			err = s.SetWinner(ctx, testName, variantIndex)
-			if err != nil {
-				return fmt.Errorf("failed to set winner: %w", err)
-			}
+				fmt.Printf("Winner declared: \"%s\" (variant %d)\n", test.Variants[variantIndex], variantIndex)
+				fmt.Printf("Test '%s' is now complete.\n", testName)
+				fmt.Println()
+				fmt.Println("You can now update your HTML to use the winning text directly:")
+				fmt.Printf("  <h1>%s</h1>\n", test.Variants[variantIndex])
 
-			fmt.Printf("Winner declared: \"%s\" (variant %d)\n", test.Variants[variantIndex], variantIndex)
-			fmt.Printf("Test '%s' is now complete.\n", testName)
-			fmt.Println()
-			fmt.Println("You can now update your HTML to use the winning text directly:")
-			fmt.Printf("  <h1>%s</h1>\n", test.Variants[variantIndex])
-
-			return nil
+				return nil
+			})
 		},
 	}
 

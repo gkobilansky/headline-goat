@@ -38,40 +38,35 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid format: must be 'csv' or 'json'")
 	}
 
-	// Open database
-	s, err := store.Open(dbPath)
-	if err != nil {
-		return fmt.Errorf("failed to open database: %w", err)
-	}
-	defer s.Close()
+	return withStore(func(s *store.SQLiteStore) error {
+		ctx := context.Background()
 
-	ctx := context.Background()
-
-	// Verify test exists
-	_, err = s.GetTest(ctx, name)
-	if err != nil {
-		if err == store.ErrNotFound {
-			return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", name)
+		// Verify test exists
+		_, err := s.GetTest(ctx, name)
+		if err != nil {
+			if err == store.ErrNotFound {
+				return fmt.Errorf("test '%s' not found. Run 'hlg list' to see available tests", name)
+			}
+			return fmt.Errorf("failed to get test: %w", err)
 		}
-		return fmt.Errorf("failed to get test: %w", err)
-	}
 
-	// Get events
-	events, err := s.GetEvents(ctx, name)
-	if err != nil {
-		return fmt.Errorf("failed to get events: %w", err)
-	}
+		// Get events
+		events, err := s.GetEvents(ctx, name)
+		if err != nil {
+			return fmt.Errorf("failed to get events: %w", err)
+		}
 
-	if len(events) == 0 {
-		fmt.Fprintf(os.Stderr, "No events recorded yet for test '%s'.\n", name)
-		fmt.Fprintln(os.Stderr, "Events appear after visitors view your page with the headline-goat script.")
-		return nil
-	}
+		if len(events) == 0 {
+			fmt.Fprintf(os.Stderr, "No events recorded yet for test '%s'.\n", name)
+			fmt.Fprintln(os.Stderr, "Events appear after visitors view your page with the headline-goat script.")
+			return nil
+		}
 
-	if exportFormat == "csv" {
-		return exportCSV(events)
-	}
-	return exportJSON(events)
+		if exportFormat == "csv" {
+			return exportCSV(events)
+		}
+		return exportJSON(events)
+	})
 }
 
 func exportCSV(events []*store.Event) error {

@@ -51,47 +51,42 @@ Examples:
 				return fmt.Errorf("use --cta-target OR --conversion-url, not both")
 			}
 
-			// Open database
-			s, err := store.Open(dbPath)
-			if err != nil {
-				return fmt.Errorf("failed to open database: %w", err)
-			}
-			defer s.Close()
+			return withStore(func(s *store.SQLiteStore) error {
+				ctx := context.Background()
 
-			ctx := context.Background()
-
-			// Create test
-			test, err := s.CreateTest(ctx, testName, variantList, nil, "")
-			if err != nil {
-				return fmt.Errorf("failed to create test: %w", err)
-			}
-
-			// Set URL fields if provided
-			if url != "" || target != "" || ctaTarget != "" || conversionURL != "" {
-				err = s.SetTestURLFields(ctx, testName, url, target, ctaTarget, conversionURL)
+				// Create test
+				test, err := s.CreateTest(ctx, testName, variantList, nil, "")
 				if err != nil {
-					return fmt.Errorf("failed to set URL fields: %w", err)
+					return fmt.Errorf("failed to create test: %w", err)
 				}
-			}
 
-			fmt.Printf("Created test '%s' with %d variants:\n", test.Name, len(test.Variants))
-			for i, v := range test.Variants {
-				fmt.Printf("  %d: %s\n", i, v)
-			}
-			if url != "" {
-				fmt.Printf("  URL: %s\n", url)
-			}
-			if target != "" {
-				fmt.Printf("  Target: %s\n", target)
-			}
-			if ctaTarget != "" {
-				fmt.Printf("  CTA Target: %s\n", ctaTarget)
-			}
-			if conversionURL != "" {
-				fmt.Printf("  Conversion URL: %s\n", conversionURL)
-			}
+				// Set URL fields if provided
+				if url != "" || target != "" || ctaTarget != "" || conversionURL != "" {
+					err = s.SetTestURLFields(ctx, testName, url, target, ctaTarget, conversionURL)
+					if err != nil {
+						return fmt.Errorf("failed to set URL fields: %w", err)
+					}
+				}
 
-			return nil
+				fmt.Printf("Created test '%s' with %d variants:\n", test.Name, len(test.Variants))
+				for i, v := range test.Variants {
+					fmt.Printf("  %d: %s\n", i, v)
+				}
+				if url != "" {
+					fmt.Printf("  URL: %s\n", url)
+				}
+				if target != "" {
+					fmt.Printf("  Target: %s\n", target)
+				}
+				if ctaTarget != "" {
+					fmt.Printf("  CTA Target: %s\n", ctaTarget)
+				}
+				if conversionURL != "" {
+					fmt.Printf("  Conversion URL: %s\n", conversionURL)
+				}
+
+				return nil
+			})
 		},
 	}
 
