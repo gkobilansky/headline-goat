@@ -6,7 +6,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/store"
 	"github.com/spf13/cobra"
 )
 

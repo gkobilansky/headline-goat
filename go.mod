@@ -1,4 +1,4 @@
-module github.com/headline-goat/headline-goat
+module github.com/gkobilansky/headline-goat
 
 go 1.21
 

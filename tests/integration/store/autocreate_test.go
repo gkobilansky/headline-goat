@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/tests/testutil"
+	"github.com/gkobilansky/headline-goat/tests/testutil"
 )
 
 func TestGetOrCreateTest_CreatesNew(t *testing.T) {

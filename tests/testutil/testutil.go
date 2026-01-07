@@ -3,7 +3,7 @@ package testutil
 import (
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 // SetupTestStore creates a test database and returns the store with a cleanup function.

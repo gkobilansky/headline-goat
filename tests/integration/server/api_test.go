@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/server"
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/server"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 func TestTestsAPI_ReturnsTestsByURL(t *testing.T) {

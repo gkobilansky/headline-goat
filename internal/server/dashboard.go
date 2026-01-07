@@ -8,8 +8,8 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/headline-goat/headline-goat/internal/dashboard"
-	"github.com/headline-goat/headline-goat/internal/stats"
+	"github.com/gkobilansky/headline-goat/internal/dashboard"
+	"github.com/gkobilansky/headline-goat/internal/stats"
 )
 
 // Dashboard template data structures

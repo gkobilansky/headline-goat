@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/server"
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/server"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 func setupTestServer(t *testing.T) (*server.Server, *store.SQLiteStore, func()) {

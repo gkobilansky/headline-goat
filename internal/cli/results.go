@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/headline-goat/headline-goat/internal/stats"
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/stats"
+	"github.com/gkobilansky/headline-goat/internal/store"
 	"github.com/spf13/cobra"
 )
 

@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 type Server struct {

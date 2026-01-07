@@ -3,8 +3,8 @@ package stats_test
 import (
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/stats"
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/stats"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 func TestSignificanceTest_ClearWinner(t *testing.T) {

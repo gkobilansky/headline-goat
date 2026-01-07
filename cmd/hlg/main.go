@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/headline-goat/headline-goat/internal/cli"
+	"github.com/gkobilansky/headline-goat/internal/cli"
 )
 
 func main() {

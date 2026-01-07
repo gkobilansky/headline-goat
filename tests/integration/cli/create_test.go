@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/store"
-	"github.com/headline-goat/headline-goat/tests/testutil"
+	"github.com/gkobilansky/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/tests/testutil"
 )
 
 func TestCreateTest_Success(t *testing.T) {

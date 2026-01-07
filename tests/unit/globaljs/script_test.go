@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/server"
+	"github.com/gkobilansky/headline-goat/internal/server"
 )
 
 func TestGenerateGlobalScript_ReturnsValidJS(t *testing.T) {

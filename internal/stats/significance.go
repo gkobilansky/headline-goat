@@ -3,7 +3,7 @@ package stats
 import (
 	"math"
 
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 // Result represents statistical analysis of a test

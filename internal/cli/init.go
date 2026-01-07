@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/headline-goat/headline-goat/internal/server"
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/server"
+	"github.com/gkobilansky/headline-goat/internal/store"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
 )

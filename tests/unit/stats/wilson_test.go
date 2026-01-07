@@ -4,7 +4,7 @@ import (
 	"math"
 	"testing"
 
-	"github.com/headline-goat/headline-goat/internal/stats"
+	"github.com/gkobilansky/headline-goat/internal/stats"
 )
 
 func TestWilsonInterval_50PercentConversion(t *testing.T) {

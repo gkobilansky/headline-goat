@@ -3,7 +3,7 @@ package cli
 import (
 	"fmt"
 
-	"github.com/headline-goat/headline-goat/internal/store"
+	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
 // withStore opens the database, executes the function, and handles cleanup.
