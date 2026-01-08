@@ -136,7 +136,9 @@ func promptFramework(existing string) (string, error) {
 		"React / Next.js",
 		"Vue",
 		"Svelte",
-		"Laravel / Django / Other",
+		"Laravel (Blade)",
+		"Django",
+		"Other",
 	}
 
 	// Find cursor position for existing selection
@@ -151,15 +153,19 @@ func promptFramework(existing string) (string, error) {
 			cursorPos = 2
 		case "svelte":
 			cursorPos = 3
-		case "other":
+		case "laravel":
 			cursorPos = 4
+		case "django":
+			cursorPos = 5
+		case "other":
+			cursorPos = 6
 		}
 	}
 
 	prompt := promptui.Select{
 		Label:     "Your framework",
 		Items:     frameworks,
-		Size:      5,
+		Size:      7,
 		CursorPos: cursorPos,
 	}
 
@@ -171,18 +177,7 @@ func promptFramework(existing string) (string, error) {
 		return "", err
 	}
 
-	switch idx {
-	case 0:
-		return "html", nil
-	case 1:
-		return "react", nil
-	case 2:
-		return "vue", nil
-	case 3:
-		return "svelte", nil
-	default:
-		return "other", nil
-	}
+	return frameworkFromIndex(idx), nil
 }
 
 func printStartupInstructions(framework, serverURL string, port int, token string) {
@@ -193,16 +188,10 @@ func printStartupInstructions(framework, serverURL string, port int, token strin
 	fmt.Println(strings.Repeat("-", 60))
 	fmt.Println()
 
-	// Step 1: Add script (with actual URL)
-	fmt.Println("1. Add the script to your site")
+	// Integration instructions
+	fmt.Println("Add the script and test to your site:")
 	fmt.Println()
-	fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
-	fmt.Println()
-
-	// Step 2: Create test
-	fmt.Println("2. Add a test with data attributes")
-	fmt.Println()
-	printFrameworkExample(framework)
+	printFrameworkSnippet(framework, serverURL)
 	fmt.Println()
 
 	fmt.Println(strings.Repeat("-", 60))
@@ -218,34 +207,110 @@ func printStartupInstructions(framework, serverURL string, port int, token strin
 	fmt.Println("Press Ctrl+C to stop")
 }
 
-func printFrameworkExample(framework string) {
-	switch framework {
-	case "react":
-		fmt.Println(`   <h1
-     data-hlg-name="hero"
-     data-hlg-variants='["Ship Faster","Build Better"]'
-   >
-     Ship Faster
-   </h1>
-   <button data-hlg-convert="hero">Sign Up</button>`)
-	case "vue":
-		fmt.Println(`   <h1
-     data-hlg-name="hero"
-     :data-hlg-variants='JSON.stringify(["Ship Faster","Build Better"])'
-   >
-     Ship Faster
-   </h1>
-   <button data-hlg-convert="hero">Sign Up</button>`)
-	case "svelte":
-		fmt.Println(`   <h1
-     data-hlg-name="hero"
-     data-hlg-variants={JSON.stringify(["Ship Faster","Build Better"])}
-   >
-     Ship Faster
-   </h1>
-   <button data-hlg-convert="hero">Sign Up</button>`)
+func frameworkFromIndex(idx int) string {
+	switch idx {
+	case 0:
+		return "html"
+	case 1:
+		return "react"
+	case 2:
+		return "vue"
+	case 3:
+		return "svelte"
+	case 4:
+		return "laravel"
+	case 5:
+		return "django"
 	default:
-		fmt.Println(`   <h1 data-hlg-name="hero" data-hlg-variants='["A","B"]'>A</h1>
-   <button data-hlg-convert="hero">Sign Up</button>`)
+		return "other"
+	}
+}
+
+func printFrameworkSnippet(framework, serverURL string) {
+	switch framework {
+	case "html":
+		fmt.Println("   File: index.html (in <head>)")
+		fmt.Println()
+		fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
+		fmt.Println()
+		fmt.Println(`   <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>`)
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
+
+	case "react":
+		fmt.Println("   File: app/layout.tsx or pages/_app.tsx (use next/script)")
+		fmt.Println()
+		fmt.Printf("   <Script src=\"%s/hlg.js\" strategy=\"afterInteractive\" />\n", serverURL)
+		fmt.Println()
+		fmt.Println("   <h1")
+		fmt.Println(`     data-hlg-name="hero"`)
+		fmt.Println(`     data-hlg-variants='["Ship Faster","Build Better"]'`)
+		fmt.Println("   >")
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
+
+	case "vue":
+		fmt.Println("   File: index.html or nuxt.config.ts (head section)")
+		fmt.Println()
+		fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
+		fmt.Println()
+		fmt.Println("   <h1")
+		fmt.Println(`     data-hlg-name="hero"`)
+		fmt.Println(`     :data-hlg-variants="JSON.stringify(['Ship Faster','Build Better'])"`)
+		fmt.Println("   >")
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
+
+	case "svelte":
+		fmt.Println("   File: src/app.html or +layout.svelte")
+		fmt.Println()
+		fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
+		fmt.Println()
+		fmt.Println("   <h1")
+		fmt.Println(`     data-hlg-name="hero"`)
+		fmt.Println(`     data-hlg-variants={JSON.stringify(['Ship Faster','Build Better'])}`)
+		fmt.Println("   >")
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
+
+	case "laravel":
+		fmt.Println("   File: resources/views/layouts/app.blade.php (in <head>)")
+		fmt.Println()
+		fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
+		fmt.Println()
+		fmt.Println("   <h1")
+		fmt.Println(`     data-hlg-name="hero"`)
+		fmt.Println(`     data-hlg-variants='@json(["Ship Faster", "Build Better"])'`)
+		fmt.Println("   >")
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
+
+	case "django":
+		fmt.Println("   File: templates/base.html (in <head>)")
+		fmt.Println()
+		fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
+		fmt.Println()
+		fmt.Println("   <h1")
+		fmt.Println(`     data-hlg-name="hero"`)
+		fmt.Println(`     data-hlg-variants='["Ship Faster", "Build Better"]'`)
+		fmt.Println("   >")
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
+
+	default: // other
+		fmt.Println("   Add to your HTML <head>:")
+		fmt.Println()
+		fmt.Printf("   <script src=\"%s/hlg.js\" defer></script>\n", serverURL)
+		fmt.Println()
+		fmt.Println(`   <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>`)
+		fmt.Println("     Ship Faster")
+		fmt.Println("   </h1>")
+		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
 	}
 }
