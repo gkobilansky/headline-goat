@@ -11,6 +11,7 @@ import (
 	"github.com/gkobilansky/headline-goat/internal/store"
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var port int
@@ -60,16 +61,30 @@ func runInit(cmd *cobra.Command, args []string) error {
 	existingURL, _ := s.GetSetting(ctx, "server_url")
 	existingFramework, _ := s.GetSetting(ctx, "framework")
 
-	// Prompt for server URL
-	serverURL, err := promptServerURL(existingURL, port)
-	if err != nil {
-		return err
-	}
+	// Detect if running in non-interactive mode
+	isInteractive := term.IsTerminal(int(os.Stdin.Fd()))
 
-	// Prompt for framework
-	framework, err := promptFramework(existingFramework)
-	if err != nil {
-		return err
+	var serverURL, framework string
+
+	if isInteractive {
+		// Interactive mode: prompt user
+		serverURL, err = promptServerURL(existingURL, port)
+		if err != nil {
+			return err
+		}
+
+		framework, err = promptFramework(existingFramework)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Non-interactive mode: use env vars or defaults
+		serverURL = getServerURL(existingURL, port)
+		framework = getFramework(existingFramework)
+
+		fmt.Printf("Running in non-interactive mode\n")
+		fmt.Printf("Server URL: %s\n", serverURL)
+		fmt.Printf("Framework: %s\n", framework)
 	}
 
 	// Store settings
@@ -313,4 +328,28 @@ func printFrameworkSnippet(framework, serverURL string) {
 		fmt.Println("   </h1>")
 		fmt.Println(`   <button data-hlg-convert="hero">Sign Up</button>`)
 	}
+}
+
+// getServerURL returns server URL for non-interactive mode
+// Priority: HG_SERVER_URL env var > existing setting > default
+func getServerURL(existing string, port int) string {
+	if url := os.Getenv("HG_SERVER_URL"); url != "" {
+		return strings.TrimSuffix(url, "/")
+	}
+	if existing != "" {
+		return existing
+	}
+	return fmt.Sprintf("http://localhost:%d", port)
+}
+
+// getFramework returns framework for non-interactive mode
+// Priority: HG_FRAMEWORK env var > existing setting > default (html)
+func getFramework(existing string) string {
+	if fw := os.Getenv("HG_FRAMEWORK"); fw != "" {
+		return fw
+	}
+	if existing != "" {
+		return existing
+	}
+	return "html"
 }
