@@ -115,7 +115,7 @@ Headline Goat needs a persistent process and SQLite storage, eg a VPS, container
 
 ### Same server vs. separate
 
-| | Same Server | Separate (Fly.io, etc.) |
+| | Same Server | Separate Server |
 |---|-------------|-------------------------|
 | **Complexity** | One thing to manage | Two servers |
 | **Cost** | Free | $3-5/mo |
@@ -152,26 +152,15 @@ cloudflared tunnel --url http://localhost:8080
 # Gives you https://random-words.trycloudflare.com
 ```
 
-### Docker (for container hosts)
+### Docker (for VPS or container hosts)
 
-A `Dockerfile` is included for deploying to Fly.io, Railway, Render, or any Docker host.
+A `Dockerfile` is included for deploying to any Docker host.
 
 ```bash
 # Build and run locally
 docker build -t hlg .
 docker run -p 8080:8080 -v hlg-data:/data hlg
 ```
-
-**Fly.io:**
-
-```bash
-fly launch --name my-headline-goat
-fly volumes create hlg_data --size 1
-fly deploy
-# Gives you https://my-headline-goat.fly.dev
-```
-
-**Railway / Render:** Connect your repo and they'll auto-detect the Dockerfile.
 
 ---
 
