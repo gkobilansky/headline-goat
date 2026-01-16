@@ -409,19 +409,73 @@ No more "this variant is winning" with 12 visits.
 
 ---
 
-## Works with AI Coding Assistants
+## Usage with AI Agents
 
-The CLI is just shell commands, so AI tools like Claude Code, Cursor, or Copilot can help you manage tests:
+The CLI is designed for AI agent workflows with `--json` output and time-to-significance estimates.
 
+### Agent Workflow
+
+```bash
+# 1. Create test
+hlg create hero --variants "A,B" --json
+
+# 2. Check results (includes when to check back)
+hlg results hero --json
+# → "check_back_at": "2026-01-17T02:00:00Z"
+# → "message": "Check back in ~9 hours"
+
+# 3. Sleep until check_back_at, repeat step 2
+
+# 4. When ready: declare winner
+hlg winner hero --variant 1
 ```
-You: "Create an A/B test for the homepage hero"
 
-AI: hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
+The `results --json` output includes:
+- `status.ready` — boolean, true when statistically significant
+- `status.check_back_at` — ISO timestamp for next check
+- `status.estimated_hours` — hours until significance
+- `status.recommended_variant` — variant index to pick (-1 if not ready)
+
+### JSON Output
+
+All commands support `--json` for programmatic use:
+
+```bash
+hlg results hero --json    # Full results with status estimates
+hlg list --json            # All tests with summary stats
+hlg create hero -v "A,B" --json  # Confirmation with test details
 ```
 
-Create tests, check results, export data, declare winners — all through simple commands.
+### Claude Code Integration
 
-**Claude Code users:** You can create a [Skill](https://docs.anthropic.com/en/docs/claude-code/skills) to teach Claude about hlg. Add a `SKILL.md` file to `.claude/skills/hlg/` with the command reference, and Claude will automatically know when and how to manage your tests.
+Add this to your project's `CLAUDE.md`:
+
+```markdown
+## A/B Testing with Headline Goat
+
+Use `hlg` for headline/copy A/B testing. Run `hlg --help` for commands.
+
+Core workflow:
+1. `hlg create <name> --variants "A,B"` - Create test
+2. `hlg results <name> --json` - Check status (note check_back_at time)
+3. Sleep until check_back_at, repeat step 2
+4. When status.ready=true: `hlg winner <name> --variant <index>`
+
+The results command shows traffic rate and estimated time to significance.
+Use --json flag for all commands when automating.
+```
+
+### Claude Code Skill
+
+For automatic hlg awareness, install the skill:
+
+```bash
+mkdir -p .claude/skills/hlg
+curl -o .claude/skills/hlg/SKILL.md \
+  https://raw.githubusercontent.com/gkobilansky/headline-goat/main/skills/hlg/SKILL.md
+```
+
+Claude will then know when and how to manage A/B tests in your project.
 
 ---
 
