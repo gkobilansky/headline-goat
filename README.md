@@ -86,13 +86,29 @@ hlg results hero
 ```
 TEST: hero
 STATE: running
+CREATED: 2026-01-16
 
 VARIANT           VIEWS    CONVERSIONS  RATE     95% CI
 ────────────────────────────────────────────────────────────
 Ship Faster       412      32           7.77%    [5.2%, 10.3%]
 Build Better      398      41           10.30%   [7.4%, 13.2%]  ← LEADING
 
-Statistical significance: 94.2% confident "Build Better" beats control
+Statistical significance: 94.2% confident "Build Better" beats control (not yet significant)
+
+STATUS
+──────
+Progress: 810 / 16300 views (5%)
+Traffic: 58 views/hour
+Check back in: ~267 hours
+```
+
+When the test reaches 95% confidence:
+
+```
+STATUS
+──────
+✓ Ready to declare winner
+Run: hlg winner hero --variant 1
 ```
 
 ---
