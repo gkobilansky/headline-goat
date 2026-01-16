@@ -531,3 +531,28 @@ func (s *SQLiteStore) GetSetting(ctx context.Context, key string) (string, error
 	}
 	return value, nil
 }
+
+// GetRecentViewCount returns total views in the last N hours and the earliest event timestamp
+func (s *SQLiteStore) GetRecentViewCount(ctx context.Context, testName string, hours int) (int, time.Time, error) {
+	var count int
+	var minCreatedAt sql.NullInt64
+
+	err := s.db.QueryRowContext(ctx, `
+		SELECT COUNT(*), MIN(created_at)
+		FROM events
+		WHERE test_name = ?
+		  AND event_type = 'view'
+		  AND created_at >= unixepoch('now', '-' || ? || ' hours')
+	`, testName, hours).Scan(&count, &minCreatedAt)
+
+	if err != nil {
+		return 0, time.Time{}, fmt.Errorf("failed to get recent view count: %w", err)
+	}
+
+	var firstEvent time.Time
+	if minCreatedAt.Valid {
+		firstEvent = time.Unix(minCreatedAt.Int64, 0)
+	}
+
+	return count, firstEvent, nil
+}

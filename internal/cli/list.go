@@ -10,6 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	listJSON bool
+)
+
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all tests",
@@ -18,12 +22,23 @@ var listCmd = &cobra.Command{
 }
 
 func init() {
+	listCmd.Flags().BoolVar(&listJSON, "json", false, "output list as JSON")
 	rootCmd.AddCommand(listCmd)
 }
 
 func runList(cmd *cobra.Command, args []string) error {
 	return withStore(func(s *store.SQLiteStore) error {
 		ctx := context.Background()
+
+		// JSON output mode
+		if listJSON {
+			output, err := FormatListJSON(ctx, s)
+			if err != nil {
+				return err
+			}
+			fmt.Println(output)
+			return nil
+		}
 
 		// Get all tests
 		tests, err := s.ListTests(ctx)

@@ -1,6 +1,9 @@
 package store
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Store defines the interface for test storage operations
 type Store interface {
@@ -29,6 +32,10 @@ type Store interface {
 	RecordEvent(ctx context.Context, testName string, variant int, eventType string, visitorID string) error
 	GetVariantStats(ctx context.Context, testName string) ([]VariantStats, error)
 	GetEvents(ctx context.Context, testName string) ([]*Event, error)
+
+	// Traffic analysis
+	// GetRecentViewCount returns total views in the last N hours and the earliest event timestamp
+	GetRecentViewCount(ctx context.Context, testName string, hours int) (int, time.Time, error)
 
 	// Lifecycle
 	Close() error

@@ -20,6 +20,7 @@ func newCreateCmd() *cobra.Command {
 		target        string
 		ctaTarget     string
 		conversionURL string
+		createJSON    bool
 	)
 
 	cmd := &cobra.Command{
@@ -68,6 +69,12 @@ Examples:
 					}
 				}
 
+				// JSON output mode
+				if createJSON {
+					fmt.Println(FormatCreateJSON(test.Name, test.Variants))
+					return nil
+				}
+
 				fmt.Printf("Created test '%s' with %d variants:\n", test.Name, len(test.Variants))
 				for i, v := range test.Variants {
 					fmt.Printf("  %d: %s\n", i, v)
@@ -95,6 +102,7 @@ Examples:
 	cmd.Flags().StringVar(&target, "target", "", "CSS selector for headline element (optional)")
 	cmd.Flags().StringVar(&ctaTarget, "cta-target", "", "CSS selector for CTA element (optional)")
 	cmd.Flags().StringVar(&conversionURL, "conversion-url", "", "URL for page-load conversion (optional)")
+	cmd.Flags().BoolVar(&createJSON, "json", false, "output result as JSON")
 	cmd.MarkFlagRequired("variants")
 
 	return cmd

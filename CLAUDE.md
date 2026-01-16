@@ -66,3 +66,37 @@ Client JS (browser) → `/b` beacon endpoint → SQLite storage → Stats Calcul
 - Wilson score interval for confidence intervals
 - Two-proportion z-test for winner detection (95% threshold)
 - Visitor deduplication by visitor_id + test + event type
+
+## Agent Workflow for A/B Testing
+
+Use `hlg` for headline/copy testing. Run `hlg --help` for commands.
+
+Core workflow:
+1. `hlg create <name> --variants "A,B"` - Create test
+2. Deploy script tag to site (see `hlg token` for snippet)
+3. `hlg results <name>` - Check status (note "check back in" time)
+4. Sleep for suggested duration, repeat step 3
+5. When ready: `hlg winner <name> --variant <index>`
+
+The results command shows traffic rate and estimated time to significance.
+
+### JSON Output for Automation
+
+All commands support `--json` flag for programmatic use:
+
+```bash
+# Get results as JSON
+hlg results hero --json
+
+# List tests as JSON
+hlg list --json
+
+# Create test with JSON response
+hlg create hero --variants "A,B" --json
+```
+
+JSON output includes:
+- Test metadata (name, state, variants)
+- Per-variant stats (views, conversions, rate, confidence intervals)
+- Significance data (confidence level, leading variant)
+- Status estimates (views needed, traffic rate, check-back time)
