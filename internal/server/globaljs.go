@@ -12,11 +12,20 @@ func (s *Server) handleGlobalJS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine server URL from request
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+	// Check X-Forwarded-Proto header first (for reverse proxies like exe.dev)
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		scheme = "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
 	}
-	serverURL := fmt.Sprintf("%s://%s", scheme, r.Host)
+	// Use X-Forwarded-Host if available, otherwise r.Host
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+	serverURL := fmt.Sprintf("%s://%s", scheme, host)
 
 	script := GenerateGlobalScript(serverURL)
 
@@ -46,6 +55,7 @@ func GenerateGlobalScript(serverURL string) string {
     // Check for SSR-selected variant
     if(el.dataset.hlgSelected!==undefined){
       var selected=parseInt(el.dataset.hlgSelected);
+      el.style.visibility='visible';
       beacon(name,selected,'view',variants,'client');
       return;
     }
@@ -60,8 +70,9 @@ func GenerateGlobalScript(serverURL string) string {
       v=parseInt(v);
     }
 
-    // Swap text
+    // Swap text and show element (CSS can hide [data-hlg-name] to prevent flash)
     el.textContent=variants[v];
+    el.style.visibility='visible';
 
     // Send view beacon with variants for auto-creation
     beacon(name,v,'view',variants,'client');
