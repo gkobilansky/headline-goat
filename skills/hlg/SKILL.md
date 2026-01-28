@@ -105,9 +105,9 @@ done
 
 ## HTML Integration
 
-Add script to site:
+Add script to site (URL auto-detects from request):
 ```html
-<script src="http://localhost:8080/hlg.js" defer></script>
+<script src="https://your-hlg-server.com/hlg.js" defer></script>
 ```
 
 Data attributes (alternative to CLI):
@@ -116,9 +116,22 @@ Data attributes (alternative to CLI):
 <button data-hlg-convert="hero">Sign Up</button>
 ```
 
+## Deployment
+
+Start the server:
+```bash
+HG_PORT=8000 ./hlg
+```
+
+Behind a reverse proxy (nginx, Cloudflare, cloud platforms), the script automatically uses HTTPS via `X-Forwarded-Proto` header.
+
+**Important:** CLI commands (`hlg results`, `hlg winner`) require shell access. Deploy on a VPS or platform with SSH access (exe.dev, DigitalOcean, etc.) for full functionality. The web dashboard provides view-only access.
+
 ## Tips
 
 - Tests auto-create on first visitor if using data attributes
 - Use `--json` for all commands when automating
 - 95% confidence threshold for statistical significance
 - Wilson score intervals for accurate small-sample stats
+- Script URL is dynamic — auto-detects protocol and host from request headers
+- Works behind any TLS-terminating proxy (nginx, Cloudflare, AWS ALB, etc.)
