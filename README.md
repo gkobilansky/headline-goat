@@ -281,7 +281,11 @@ The `hlg.js` script automatically detects the correct URL from request headers, 
 ## FAQ
 
 **How do I avoid text flash?**
-Use `data-hlg-selected` for SSR, or: `[data-hlg-name] { visibility: hidden; }`
+Add this CSS — the script automatically sets `visibility: visible` after swapping:
+```css
+[data-hlg-name] { visibility: hidden; }
+```
+For SSR frameworks, use `data-hlg-selected` to pre-render the correct variant.
 
 **How long should I run a test?**
 Until 95% confidence. The STATUS section tells you when.
