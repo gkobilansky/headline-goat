@@ -12,11 +12,20 @@ func (s *Server) handleGlobalJS(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Determine server URL from request
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+	// Check X-Forwarded-Proto header first (for reverse proxies like exe.dev)
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	if scheme == "" {
+		scheme = "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
 	}
-	serverURL := fmt.Sprintf("%s://%s", scheme, r.Host)
+	// Use X-Forwarded-Host if available, otherwise r.Host
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+	serverURL := fmt.Sprintf("%s://%s", scheme, host)
 
 	script := GenerateGlobalScript(serverURL)
 
