@@ -135,9 +135,9 @@ Use `hlg` for headline A/B testing. Workflow:
 Or install the skill:
 
 ```bash
-mkdir -p .claude/skills/hlg
-curl -o .claude/skills/hlg/SKILL.md \
-  https://raw.githubusercontent.com/gkobilansky/headline-goat/main/skills/hlg/SKILL.md
+mkdir -p ~/.claude/skills/hlg
+curl -o ~/.claude/skills/hlg/SKILL.md \
+  https://raw.githubusercontent.com/gkobilansky/headline-goat/main/.claude/skills/hlg/SKILL.md
 ```
 
 ---
