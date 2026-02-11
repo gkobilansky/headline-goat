@@ -113,3 +113,64 @@ func TestGenerateGlobalScript_HandlesConvertEvents(t *testing.T) {
 		t.Error("expected script to add click handlers for conversions")
 	}
 }
+
+// --- GET query param beacon tests ---
+
+func TestGenerateGlobalScript_UsesQueryParamBeacon(t *testing.T) {
+	script := server.GenerateGlobalScript("http://localhost:8080")
+
+	// Should build URL with query params instead of JSON body
+	if !strings.Contains(script, "?t=") || !strings.Contains(script, "&v=") {
+		t.Error("expected beacon to use query parameters (e.g., ?t=...&v=...)")
+	}
+}
+
+func TestGenerateGlobalScript_BeaconFallsBackToImagePixel(t *testing.T) {
+	script := server.GenerateGlobalScript("http://localhost:8080")
+
+	// Should use Image() as a fallback for environments without sendBeacon
+	if !strings.Contains(script, "new Image") {
+		t.Error("expected beacon to fall back to image pixel (new Image)")
+	}
+}
+
+// --- Bot detection tests (client-side) ---
+
+func TestGenerateGlobalScript_ContainsBotDetection(t *testing.T) {
+	script := server.GenerateGlobalScript("http://localhost:8080")
+
+	// Should check navigator.webdriver (automation detection)
+	if !strings.Contains(script, "navigator.webdriver") {
+		t.Error("expected script to check navigator.webdriver for bot detection")
+	}
+}
+
+func TestGenerateGlobalScript_SkipsBeaconForBots(t *testing.T) {
+	script := server.GenerateGlobalScript("http://localhost:8080")
+
+	// Should check for headless/automation indicators
+	if !strings.Contains(script, "webdriver") {
+		t.Error("expected script to detect webdriver-based bots")
+	}
+
+	// Should have a guard that prevents beacon sending for detected bots
+	if !strings.Contains(script, "isBot") && !strings.Contains(script, "bot") {
+		t.Error("expected script to have bot detection variable or check")
+	}
+}
+
+// --- SPA support tests ---
+
+func TestGenerateGlobalScript_HandlesSPANavigation(t *testing.T) {
+	script := server.GenerateGlobalScript("http://localhost:8080")
+
+	// Should intercept pushState for SPA route changes
+	if !strings.Contains(script, "pushState") {
+		t.Error("expected script to intercept history.pushState for SPA support")
+	}
+
+	// Should listen for popstate (back/forward navigation)
+	if !strings.Contains(script, "popstate") {
+		t.Error("expected script to listen for popstate events")
+	}
+}
