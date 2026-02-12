@@ -5,10 +5,21 @@ import (
 	"encoding/json"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gkobilansky/headline-goat/internal/store"
 )
+
+// transparentGIF is a 1x1 transparent GIF pixel (43 bytes).
+var transparentGIF = []byte{
+	0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00,
+	0x01, 0x00, 0x80, 0x00, 0x00, 0xff, 0xff, 0xff,
+	0x00, 0x00, 0x00, 0x21, 0xf9, 0x04, 0x01, 0x00,
+	0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00,
+	0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02, 0x44,
+	0x01, 0x00, 0x3b,
+}
 
 // setCORS sets standard CORS headers for cross-origin requests.
 func setCORS(w http.ResponseWriter, methods string) {
@@ -99,19 +110,47 @@ type BeaconRequest struct {
 }
 
 func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
-	setCORS(w, "POST, OPTIONS")
+	setCORS(w, "GET, POST, OPTIONS")
 
 	if handlePreflight(w, r) {
 		return
 	}
 
-	if !requireMethod(w, r, http.MethodPost) {
+	// Bot detection: silently drop requests from known bots
+	if IsBot(r.UserAgent()) {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "image/gif")
+			w.Header().Set("Cache-Control", "no-store")
+			w.Write(transparentGIF)
+		} else {
+			w.WriteHeader(http.StatusNoContent)
+		}
 		return
 	}
 
 	var req BeaconRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
+
+	switch r.Method {
+	case http.MethodGet:
+		// Parse from query parameters (no CORS preflight needed)
+		q := r.URL.Query()
+		req.TestName = q.Get("t")
+		v, _ := strconv.Atoi(q.Get("v"))
+		req.Variant = v
+		req.EventType = q.Get("e")
+		req.VisitorID = q.Get("vid")
+		req.Source = q.Get("src")
+		if variants := q.Get("variants"); variants != "" {
+			json.Unmarshal([]byte(variants), &req.Variants)
+		}
+	case http.MethodPost:
+		// Existing JSON body parsing (backward compatible)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -170,6 +209,14 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	// Record event (deduplication handled by store)
 	if err := s.store.RecordEvent(ctx, req.TestName, req.Variant, req.EventType, req.VisitorID); err != nil {
 		http.Error(w, "Failed to record event", http.StatusInternalServerError)
+		return
+	}
+
+	// GET requests return a transparent 1x1 GIF (image pixel compatibility)
+	if r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "image/gif")
+		w.Header().Set("Cache-Control", "no-store")
+		w.Write(transparentGIF)
 		return
 	}
 

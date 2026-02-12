@@ -39,6 +39,16 @@ func GenerateGlobalScript(serverURL string) string {
 	return fmt.Sprintf(`(function(){
   var S='%s';
 
+  // Client-side bot detection: skip tracking for automated browsers
+  var isBot=(function(){
+    if(navigator.webdriver)return true;
+    if(window.__nightmare||window._phantom||window.callPhantom)return true;
+    if(window.Cypress||window.__cypress)return true;
+    if(/HeadlessChrome/.test(navigator.userAgent))return true;
+    return false;
+  })();
+  if(isBot)return;
+
   // Get or create visitor ID
   var vid=localStorage.getItem('hlg_vid');
   if(!vid){
@@ -46,84 +56,86 @@ func GenerateGlobalScript(serverURL string) string {
     localStorage.setItem('hlg_vid',vid);
   }
 
-  // Process all data-attribute test elements (client-side tests)
-  document.querySelectorAll('[data-hlg-name]').forEach(function(el){
-    var name=el.dataset.hlgName;
-    var variants=JSON.parse(el.dataset.hlgVariants||'[]');
-    if(!variants.length)return;
+  function initPage(){
+    // Process all data-attribute test elements (client-side tests)
+    document.querySelectorAll('[data-hlg-name]').forEach(function(el){
+      var name=el.dataset.hlgName;
+      var variants=JSON.parse(el.dataset.hlgVariants||'[]');
+      if(!variants.length)return;
 
-    // Check for SSR-selected variant
-    if(el.dataset.hlgSelected!==undefined){
-      var selected=parseInt(el.dataset.hlgSelected);
-      beacon(name,selected,'view',variants,'client');
-      return;
-    }
+      // Check for SSR-selected variant
+      if(el.dataset.hlgSelected!==undefined){
+        var selected=parseInt(el.dataset.hlgSelected);
+        beacon(name,selected,'view',variants,'client');
+        return;
+      }
 
-    // Get or assign variant
-    var key='hlg_'+name;
-    var v=localStorage.getItem(key);
-    if(v===null){
-      v=Math.floor(Math.random()*variants.length);
-      localStorage.setItem(key,v);
-    }else{
-      v=parseInt(v);
-    }
+      // Get or assign variant
+      var key='hlg_'+name;
+      var v=localStorage.getItem(key);
+      if(v===null){
+        v=Math.floor(Math.random()*variants.length);
+        localStorage.setItem(key,v);
+      }else{
+        v=parseInt(v);
+      }
 
-    // Swap text
-    el.textContent=variants[v];
+      // Swap text
+      el.textContent=variants[v];
 
-    // Send view beacon with variants for auto-creation
-    beacon(name,v,'view',variants,'client');
-  });
-
-  // Process convert elements
-  document.querySelectorAll('[data-hlg-convert]').forEach(function(el){
-    var name=el.dataset.hlgConvert;
-    var v=parseInt(localStorage.getItem('hlg_'+name)||'0');
-
-    // Swap text if variants provided
-    var variants=el.dataset.hlgConvertVariants;
-    if(variants){
-      variants=JSON.parse(variants);
-      if(variants[v])el.textContent=variants[v];
-    }
-
-    // URL type: beacon on load
-    if(el.dataset.hlgConvertType==='url'){
-      beacon(name,v,'convert',null,'client');
-      return;
-    }
-
-    // Click handler
-    el.addEventListener('click',function(){
-      beacon(name,v,'convert',null,'client');
+      // Send view beacon with variants for auto-creation
+      beacon(name,v,'view',variants,'client');
     });
-  });
 
-  // Server-side test handling with cache
-  (function(){
-    var path=location.pathname;
-    var cacheKey='hlg_tests_'+path;
-    var cached=localStorage.getItem(cacheKey);
+    // Process convert elements
+    document.querySelectorAll('[data-hlg-convert]').forEach(function(el){
+      var name=el.dataset.hlgConvert;
+      var v=parseInt(localStorage.getItem('hlg_'+name)||'0');
 
-    // Apply cached tests immediately (no flash on repeat visits)
-    if(cached){
-      try{
-        applyServerTests(JSON.parse(cached));
-      }catch(e){}
-    }
+      // Swap text if variants provided
+      var variants=el.dataset.hlgConvertVariants;
+      if(variants){
+        variants=JSON.parse(variants);
+        if(variants[v])el.textContent=variants[v];
+      }
 
-    // Fetch fresh config in background, update cache
-    fetch(S+'/api/tests?url='+encodeURIComponent(path))
-      .then(function(r){return r.json()})
-      .then(function(tests){
-        // Update cache for next visit
-        localStorage.setItem(cacheKey,JSON.stringify(tests));
-        // Apply if not already applied from cache
-        if(!cached)applyServerTests(tests);
-      })
-      .catch(function(){});
-  })();
+      // URL type: beacon on load
+      if(el.dataset.hlgConvertType==='url'){
+        beacon(name,v,'convert',null,'client');
+        return;
+      }
+
+      // Click handler
+      el.addEventListener('click',function(){
+        beacon(name,v,'convert',null,'client');
+      });
+    });
+
+    // Server-side test handling with cache
+    (function(){
+      var path=location.pathname;
+      var cacheKey='hlg_tests_'+path;
+      var cached=localStorage.getItem(cacheKey);
+
+      // Apply cached tests immediately (no flash on repeat visits)
+      if(cached){
+        try{
+          applyServerTests(JSON.parse(cached));
+        }catch(e){}
+      }
+
+      // Fetch fresh config in background, update cache
+      fetch(S+'/api/tests?url='+encodeURIComponent(path))
+        .then(function(r){return r.json()})
+        .then(function(tests){
+          // Update cache for next visit
+          localStorage.setItem(cacheKey,JSON.stringify(tests));
+          // Apply if not already applied from cache
+          if(!cached)applyServerTests(tests);
+        })
+        .catch(function(){});
+    })();
+  }
 
   function applyServerTests(tests){
     if(!tests||!tests.length)return;
@@ -166,9 +178,27 @@ func GenerateGlobalScript(serverURL string) string {
   }
 
   function beacon(t,v,e,variants,src){
-    var payload={t:t,v:v,e:e,vid:vid,src:src||'client'};
-    if(variants)payload.variants=variants;
-    navigator.sendBeacon(S+'/b',JSON.stringify(payload));
+    var params='?t='+encodeURIComponent(t)+'&v='+v+'&e='+e+'&vid='+encodeURIComponent(vid)+'&src='+(src||'client');
+    if(variants)params+='&variants='+encodeURIComponent(JSON.stringify(variants));
+    var url=S+'/b'+params;
+    if(navigator.sendBeacon){
+      navigator.sendBeacon(url);
+    }else{
+      new Image().src=url;
+    }
   }
+
+  // Run on initial page load
+  initPage();
+
+  // SPA support: re-run on client-side navigation
+  var origPushState=history.pushState;
+  history.pushState=function(){
+    origPushState.apply(this,arguments);
+    initPage();
+  };
+  window.addEventListener('popstate',function(){
+    initPage();
+  });
 })();`, serverURL)
 }
