@@ -41,8 +41,11 @@ hlg
 ### 3. Add to your site
 
 ```html
-<script src="http://localhost:8080/hlg.js" defer></script>
+<!-- Replace with your server URL -->
+<script src="https://your-server.com/hlg.js" defer></script>
 ```
+
+> **Note:** The script auto-detects the correct protocol (http/https) from request headers, so it works seamlessly behind reverse proxies.
 
 ### 4. Create a test
 
@@ -132,9 +135,9 @@ Use `hlg` for headline A/B testing. Workflow:
 Or install the skill:
 
 ```bash
-mkdir -p .claude/skills/hlg
-curl -o .claude/skills/hlg/SKILL.md \
-  https://raw.githubusercontent.com/gkobilansky/headline-goat/main/skills/hlg/SKILL.md
+mkdir -p ~/.claude/skills/hlg
+curl -o ~/.claude/skills/hlg/SKILL.md \
+  https://raw.githubusercontent.com/gkobilansky/headline-goat/main/.claude/skills/hlg/SKILL.md
 ```
 
 ---
@@ -179,24 +182,66 @@ Add `--json` to any command for JSON output.
 
 ## Deployment
 
-Headline Goat needs a persistent process. Options:
+Headline Goat needs a persistent process. The server automatically detects HTTPS when behind a reverse proxy via `X-Forwarded-Proto` header.
 
-**Same server (recommended):**
+### Reverse Proxy (nginx, Caddy, etc.)
+
 ```nginx
-location ~ ^/(hlg\.js|b|dashboard) {
+location ~ ^/(hlg\.js|b|dashboard|api) {
     proxy_pass http://localhost:8080;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Host $host;
 }
 ```
 
-**Cloudflare Tunnel:**
+The `hlg.js` script will automatically use the correct `https://` URLs.
+
+### Cloudflare Tunnel
+
 ```bash
 cloudflared tunnel --url http://localhost:8080
 ```
 
-**Docker:**
+### Cloud Platforms
+
+Most platforms handle TLS termination automatically. Just expose the port:
+
+```bash
+HG_PORT=8000 ./hlg
+```
+
+**Note:** You need shell access to run CLI commands (`hlg results`, `hlg winner`). Platforms with SSH access (exe.dev, VPS) are recommended. The dashboard at `/dashboard?token=xxx` provides view-only access to results.
+
+### Docker
+
 ```bash
 docker build -t hlg .
 docker run -p 8080:8080 -v hlg-data:/data hlg
+```
+
+### Systemd (keep running)
+
+```ini
+# /etc/systemd/system/hlg.service
+[Unit]
+Description=Headline Goat A/B Testing
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/hlg
+ExecStart=/opt/hlg/hlg
+Restart=always
+Environment=HG_PORT=8080
+Environment=HG_DB_PATH=/opt/hlg/hlg.db
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now hlg
 ```
 
 ---
@@ -227,13 +272,20 @@ docker run -p 8080:8080 -v hlg-data:/data hlg
 |----------|---------|-------------|
 | `HG_PORT` | `8080` | Server port |
 | `HG_DB_PATH` | `./hlg.db` | Database path |
+| `HG_SERVER_URL` | (auto-detect) | Override server URL in generated script |
+
+The `hlg.js` script automatically detects the correct URL from request headers, including `X-Forwarded-Proto` and `X-Forwarded-Host` for reverse proxy setups.
 
 ---
 
 ## FAQ
 
 **How do I avoid text flash?**
-Use `data-hlg-selected` for SSR, or: `[data-hlg-name] { visibility: hidden; }`
+Add this CSS — the script automatically sets `visibility: visible` after swapping:
+```css
+[data-hlg-name] { visibility: hidden; }
+```
+For SSR frameworks, use `data-hlg-selected` to pre-render the correct variant.
 
 **How long should I run a test?**
 Until 95% confidence. The STATUS section tells you when.

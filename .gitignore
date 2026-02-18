@@ -15,7 +15,9 @@
 .idea/
 .vscode/
 *.swp
-.claude/
+# Claude Code user config (ignore)
+.claude/*
+!.claude/skills/
 CLAUDE.md
 thoughts/
 
