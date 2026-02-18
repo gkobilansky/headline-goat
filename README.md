@@ -1,4 +1,4 @@
-# 🐐 Headline Goat
+# <img src="logo.png" alt="Headline Goat Logo" height="48" style="vertical-align:middle"/> Headline Goat
 
 A/B test any text on any website. Minimal setup, maximum flexibility. Built for humans and AI agents.
 

@@ -19,6 +19,9 @@
 CLAUDE.md
 thoughts/
 
+# Variables
+.env*
+
 # OS
 .DS_Store
 Thumbs.db
