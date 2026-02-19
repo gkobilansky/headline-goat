@@ -25,6 +25,10 @@ No external services, no dashboards to log into. Tests live as data attributes i
 ### 1. Install
 
 ```bash
+# curl installer (Linux/macOS)
+curl -sSL https://raw.githubusercontent.com/gkobilansky/headline-goat/main/scripts/install.sh | bash
+
+# or with Go
 go install github.com/gkobilansky/headline-goat/cmd/hlg@latest
 ```
 
