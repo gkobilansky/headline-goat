@@ -1,6 +1,6 @@
 # <img src="logo.png" alt="Headline Goat Logo" height="200" style="vertical-align:middle"/> Headline Goat
 
-A/B test any text on any website. Minimal setup, maximum flexibility. Built for humans and AI agents.
+A/B test any text on any website. Single Go binary, embedded SQLite, no external services.
 
 ```bash
 # Create a test via CLI
@@ -10,17 +10,13 @@ hlg create hero --variants "Ship Faster,Build Better" --url "/" --target "h1"
 <h1 data-hlg-name="hero" data-hlg-variants='["Ship Faster","Build Better"]'>Ship Faster</h1>
 ```
 
-Single Go binary with embedded SQLite. No external services, no dependencies.
-
 ---
 
 ## Why Headline Goat
 
-- **Test any text** — Headlines, CTAs, value props. If it's text, you can test it.
-- **CLI or data attributes** — Centralized control or inline definitions. Mix both.
-- **AI-agent friendly** — JSON output with time-to-significance estimates for automated workflows.
-- **Minimal** — ~2000 lines of Go. The entire codebase fits in your head.
-- **Self-hosted** — Your data stays on your server.
+No external services, no dashboards to log into. Tests live as data attributes in your HTML or commands in your CLI — mix both, neither is required.
+
+~2000 lines of Go. Small enough to audit, fast enough to run on a $5 VPS.
 
 ---
 
@@ -44,8 +40,6 @@ hlg
 <!-- Replace with your server URL -->
 <script src="https://your-server.com/hlg.js" defer></script>
 ```
-
-> **Note:** The script auto-detects the correct protocol (http/https) from request headers, so it works seamlessly behind reverse proxies.
 
 ### 4. Create a test
 
@@ -90,23 +84,15 @@ When ready: `hlg winner hero --variant 1`
 
 ## AI Agent Integration
 
-The CLI supports `--json` output with time-to-significance estimates for automated workflows.
-
-### Workflow
+Same workflow as Quick Start, but use `--json` on every command. Poll until `status.ready` is true, sleeping until `status.check_back_at` between checks:
 
 ```bash
-# 1. Create test
-hlg create hero --variants "A,B" --json
-
-# 2. Check results
 hlg results hero --json
 # → "status.ready": false
 # → "status.check_back_at": "2026-01-17T02:00:00Z"
+# sleep until check_back_at, then repeat
 
-# 3. Sleep until check_back_at, repeat step 2
-
-# 4. When status.ready=true
-hlg winner hero --variant 1
+hlg winner hero --variant 1   # when status.ready=true
 ```
 
 ### JSON Output
@@ -194,8 +180,6 @@ location ~ ^/(hlg\.js|b|dashboard|api) {
 }
 ```
 
-The `hlg.js` script will automatically use the correct `https://` URLs.
-
 ### Cloudflare Tunnel
 
 ```bash
@@ -203,8 +187,6 @@ cloudflared tunnel --url http://localhost:8080
 ```
 
 ### Cloud Platforms
-
-Most platforms handle TLS termination automatically. Just expose the port:
 
 ```bash
 HG_PORT=8000 ./hlg
@@ -246,22 +228,13 @@ sudo systemctl enable --now hlg
 
 ---
 
-## Framework Examples
+## Framework Notes
 
-**React/Next.js:**
-```jsx
-<h1 data-hlg-name="hero" data-hlg-variants='["A","B"]'>A</h1>
-<button data-hlg-convert="hero">Sign Up</button>
+Data attributes work in any framework. In Vue/Svelte, bind the variants array rather than inlining a JSON string:
+
 ```
-
-**Vue:**
-```vue
-<h1 data-hlg-name="hero" :data-hlg-variants='JSON.stringify(["A","B"])'>A</h1>
-```
-
-**Svelte:**
-```svelte
-<h1 data-hlg-name="hero" data-hlg-variants={JSON.stringify(["A","B"])}>A</h1>
+:data-hlg-variants='JSON.stringify(["A","B"])'   <!-- Vue -->
+data-hlg-variants={JSON.stringify(["A","B"])}     <!-- Svelte -->
 ```
 
 ---
