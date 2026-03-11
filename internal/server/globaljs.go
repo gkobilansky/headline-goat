@@ -56,9 +56,24 @@ func GenerateGlobalScript(serverURL string) string {
     localStorage.setItem('hlg_vid',vid);
   }
 
+  // Get or assign a sticky variant index for a test
+  function getVariant(name,count){
+    var key='hlg_'+name;
+    var v=localStorage.getItem(key);
+    if(v===null){
+      v=Math.floor(Math.random()*count);
+      localStorage.setItem(key,v);
+    }else{
+      v=parseInt(v);
+    }
+    return v;
+  }
+
   function initPage(){
     // Process all data-attribute test elements (client-side tests)
     document.querySelectorAll('[data-hlg-name]').forEach(function(el){
+      if(el.dataset.hlgBound)return;
+      el.dataset.hlgBound='1';
       var name=el.dataset.hlgName;
       var variants=JSON.parse(el.dataset.hlgVariants||'[]');
       if(!variants.length)return;
@@ -70,15 +85,7 @@ func GenerateGlobalScript(serverURL string) string {
         return;
       }
 
-      // Get or assign variant
-      var key='hlg_'+name;
-      var v=localStorage.getItem(key);
-      if(v===null){
-        v=Math.floor(Math.random()*variants.length);
-        localStorage.setItem(key,v);
-      }else{
-        v=parseInt(v);
-      }
+      var v=getVariant(name,variants.length);
 
       // Swap text
       el.textContent=variants[v];
@@ -89,6 +96,8 @@ func GenerateGlobalScript(serverURL string) string {
 
     // Process convert elements
     document.querySelectorAll('[data-hlg-convert]').forEach(function(el){
+      if(el.dataset.hlgConvertBound)return;
+      el.dataset.hlgConvertBound='1';
       var name=el.dataset.hlgConvert;
       var v=parseInt(localStorage.getItem('hlg_'+name)||'0');
 
@@ -147,16 +156,10 @@ func GenerateGlobalScript(serverURL string) string {
       if(!test.target)return;
       var el=document.querySelector(test.target);
       if(!el)return;
+      if(el.dataset.hlgServerBound)return;
+      el.dataset.hlgServerBound='1';
 
-      // Assign variant (same localStorage pattern)
-      var key='hlg_'+test.name;
-      var v=localStorage.getItem(key);
-      if(v===null){
-        v=Math.floor(Math.random()*test.variants.length);
-        localStorage.setItem(key,v);
-      }else{
-        v=parseInt(v);
-      }
+      var v=getVariant(test.name,test.variants.length);
 
       // Apply variant
       if(test.variants[v])el.textContent=test.variants[v];
@@ -165,7 +168,8 @@ func GenerateGlobalScript(serverURL string) string {
       // Setup conversion tracking
       if(test.cta_target){
         var cta=document.querySelector(test.cta_target);
-        if(cta){
+        if(cta&&!cta.dataset.hlgCtaBound){
+          cta.dataset.hlgCtaBound='1';
           cta.addEventListener('click',function(){
             beacon(test.name,v,'convert',null,'server');
           });
