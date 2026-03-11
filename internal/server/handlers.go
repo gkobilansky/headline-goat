@@ -11,6 +11,18 @@ import (
 	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
+// Beacon event types.
+const (
+	EventView    = "view"
+	EventConvert = "convert"
+)
+
+// Beacon source identifiers.
+const (
+	SourceClient = "client"
+	SourceServer = "server"
+)
+
 // transparentGIF is a 1x1 transparent GIF pixel (43 bytes).
 var transparentGIF = []byte{
 	0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x01, 0x00,
@@ -19,6 +31,13 @@ var transparentGIF = []byte{
 	0x00, 0x00, 0x00, 0x2c, 0x00, 0x00, 0x00, 0x00,
 	0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x02, 0x44,
 	0x01, 0x00, 0x3b,
+}
+
+// writePixel responds with a 1x1 transparent GIF for image pixel compatibility.
+func writePixel(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "image/gif")
+	w.Header().Set("Cache-Control", "no-store")
+	w.Write(transparentGIF)
 }
 
 // setCORS sets standard CORS headers for cross-origin requests.
@@ -119,9 +138,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	// Bot detection: silently drop requests from known bots
 	if IsBot(r.UserAgent()) {
 		if r.Method == http.MethodGet {
-			w.Header().Set("Content-Type", "image/gif")
-			w.Header().Set("Cache-Control", "no-store")
-			w.Write(transparentGIF)
+			writePixel(w)
 		} else {
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -145,6 +162,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 		}
 	case http.MethodPost:
 		// Existing JSON body parsing (backward compatible)
+		r.Body = http.MaxBytesReader(w, r.Body, 4096)
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
@@ -160,7 +178,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.EventType != "view" && req.EventType != "convert" {
+	if req.EventType != EventView && req.EventType != EventConvert {
 		http.Error(w, "Invalid event type", http.StatusBadRequest)
 		return
 	}
@@ -171,12 +189,12 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	var test *store.Test
 	var err error
 
-	// Default source to "client" if not specified
+	// Default source to client if not specified
 	if req.Source == "" {
-		req.Source = "client"
+		req.Source = SourceClient
 	}
 
-	if len(req.Variants) > 0 && req.Source == "client" {
+	if len(req.Variants) > 0 && req.Source == SourceClient {
 		// Auto-create from client data attributes
 		var created bool
 		test, created, err = s.store.GetOrCreateTest(ctx, req.TestName, req.Variants)
@@ -201,7 +219,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for source conflict (server-created test receiving client beacons)
-	if test.Source == "server" && req.Source == "client" && !test.HasSourceConflict {
+	if test.Source == SourceServer && req.Source == SourceClient && !test.HasSourceConflict {
 		// Mark conflict (ignore error, non-critical)
 		_ = s.store.SetSourceConflict(ctx, test.Name, true)
 	}
@@ -214,9 +232,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 
 	// GET requests return a transparent 1x1 GIF (image pixel compatibility)
 	if r.Method == http.MethodGet {
-		w.Header().Set("Content-Type", "image/gif")
-		w.Header().Set("Cache-Control", "no-store")
-		w.Write(transparentGIF)
+		writePixel(w)
 		return
 	}
 
