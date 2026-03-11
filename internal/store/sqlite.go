@@ -15,7 +15,8 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type SQLiteStore struct {
-	db *sql.DB
+	db     *sql.DB
+	dbPath string
 }
 
 const schema = `
@@ -89,7 +90,7 @@ func Open(dbPath string) (*SQLiteStore, error) {
 	// Add index for URL lookups
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_tests_url ON tests(url)")
 
-	return &SQLiteStore{db: db}, nil
+	return &SQLiteStore{db: db, dbPath: dbPath}, nil
 }
 
 func (s *SQLiteStore) Close() error {
@@ -315,6 +316,11 @@ func (s *SQLiteStore) GetEvents(ctx context.Context, testName string) ([]*Event,
 // DB returns the underlying database connection for health checks
 func (s *SQLiteStore) DB() *sql.DB {
 	return s.db
+}
+
+// DBPath returns the path to the database file
+func (s *SQLiteStore) DBPath() string {
+	return s.dbPath
 }
 
 // SetWinner marks a test as completed with the specified winning variant

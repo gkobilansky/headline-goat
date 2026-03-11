@@ -89,11 +89,10 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	// Get database size
 	var dbSize int64
-	db := s.store.DB()
-	row := db.QueryRow("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
+	row := s.store.DB().QueryRow("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
 	if err := row.Scan(&dbSize); err != nil {
 		// Try to get file size as fallback
-		if info, statErr := os.Stat(getDBPath(db)); statErr == nil {
+		if info, statErr := os.Stat(s.store.DBPath()); statErr == nil {
 			dbSize = info.Size()
 		}
 	}
@@ -110,12 +109,6 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
-}
-
-// getDBPath attempts to get the database file path
-func getDBPath(db interface{}) string {
-	// This is a simplified version - in practice you'd track the path
-	return "./headline-goat.db"
 }
 
 // BeaconRequest represents an incoming beacon event
