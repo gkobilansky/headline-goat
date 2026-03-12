@@ -47,10 +47,6 @@ func (s *Server) setupRoutes() {
 	s.router.Handle("/dashboard/api/tests", s.authMiddleware(http.HandlerFunc(s.handleDashboardAPI)))
 }
 
-func (s *Server) Start() error {
-	return s.StartWithOptions(true)
-}
-
 // StartQuiet starts the server without printing startup messages
 func (s *Server) StartQuiet() error {
 	return s.StartWithOptions(false)
@@ -79,14 +75,6 @@ func (s *Server) StartWithOptions(printMessages bool) error {
 
 func (s *Server) Token() string {
 	return s.token
-}
-
-func (s *Server) Store() *store.SQLiteStore {
-	return s.store
-}
-
-func (s *Server) StartTime() time.Time {
-	return s.startTime
 }
 
 func (s *Server) Handler() http.Handler {

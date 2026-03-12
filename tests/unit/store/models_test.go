@@ -14,7 +14,6 @@ func TestTestState_Constants(t *testing.T) {
 		want  string
 	}{
 		{store.StateRunning, "running"},
-		{store.StatePaused, "paused"},
 		{store.StateCompleted, "completed"},
 	}
 

@@ -6,7 +6,6 @@ type TestState string
 
 const (
 	StateRunning   TestState = "running"
-	StatePaused    TestState = "paused"
 	StateCompleted TestState = "completed"
 )
 
