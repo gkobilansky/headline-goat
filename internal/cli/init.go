@@ -104,8 +104,7 @@ func runInit(cmd *cobra.Command, args []string) error {
 	// Print startup message with instructions
 	printStartupInstructions(framework, serverURL, port, srv.Token())
 
-	// Start server quietly (we printed our own message)
-	return srv.StartQuiet()
+	return srv.Start()
 }
 
 func promptServerURL(existing string, port int) (string, error) {

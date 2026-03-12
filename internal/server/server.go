@@ -47,12 +47,8 @@ func (s *Server) setupRoutes() {
 	s.router.Handle("/dashboard/api/tests", s.authMiddleware(http.HandlerFunc(s.handleDashboardAPI)))
 }
 
-// StartQuiet starts the server without printing startup messages
-func (s *Server) StartQuiet() error {
-	return s.StartWithOptions(false)
-}
-
-func (s *Server) StartWithOptions(printMessages bool) error {
+// Start writes the token file if configured and begins serving HTTP traffic.
+func (s *Server) Start() error {
 	// Write token to file for OTP command
 	if s.tokenFile != "" {
 		if err := os.WriteFile(s.tokenFile, []byte(s.token), 0600); err != nil {
@@ -61,15 +57,6 @@ func (s *Server) StartWithOptions(printMessages bool) error {
 	}
 
 	addr := fmt.Sprintf(":%d", s.port)
-
-	if printMessages {
-		fmt.Println()
-		fmt.Printf("🐐 Headline Goat running on http://localhost:%d\n", s.port)
-		fmt.Printf("Dashboard: http://localhost:%d/dashboard?token=%s\n", s.port, s.token)
-		fmt.Println()
-		fmt.Println("Press Ctrl+C to stop")
-	}
-
 	return http.ListenAndServe(addr, s.router)
 }
 
