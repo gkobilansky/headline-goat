@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/gkobilansky/headline-goat/internal/store"
 	"github.com/gkobilansky/headline-goat/tests/testutil"
 )
 
@@ -26,8 +27,8 @@ func TestGetOrCreateTest_CreatesNew(t *testing.T) {
 		t.Errorf("expected name 'hero', got %s", test.Name)
 	}
 
-	if test.Source != "client" {
-		t.Errorf("expected source 'client', got %s", test.Source)
+	if test.Source != store.SourceClient {
+		t.Errorf("expected source %q, got %s", store.SourceClient, test.Source)
 	}
 
 	if len(test.Variants) != 2 {
@@ -62,8 +63,8 @@ func TestGetOrCreateTest_ReturnsExisting(t *testing.T) {
 	}
 
 	// Should have source=server (from CLI creation)
-	if test.Source != "server" {
-		t.Errorf("expected source 'server', got %s", test.Source)
+	if test.Source != store.SourceServer {
+		t.Errorf("expected source %q, got %s", store.SourceServer, test.Source)
 	}
 }
 
@@ -78,8 +79,8 @@ func TestCreateTest_HasServerSource(t *testing.T) {
 		t.Fatalf("CreateTest failed: %v", err)
 	}
 
-	if test.Source != "server" {
-		t.Errorf("expected source 'server', got %s", test.Source)
+	if test.Source != store.SourceServer {
+		t.Errorf("expected source %q, got %s", store.SourceServer, test.Source)
 	}
 
 	// Verify persisted

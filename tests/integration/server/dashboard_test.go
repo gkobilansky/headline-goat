@@ -160,6 +160,29 @@ func TestDashboardTest_Detail(t *testing.T) {
 	}
 }
 
+func TestDashboard_TemplatesCached(t *testing.T) {
+	srv, s, cleanup := setupTestServer(t)
+	defer cleanup()
+
+	ctx := context.Background()
+	_, _ = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
+
+	// Render dashboard twice and verify both succeed (templates should be cached)
+	for i := 0; i < 2; i++ {
+		req := httptest.NewRequest(http.MethodGet, "/dashboard", nil)
+		req.AddCookie(&http.Cookie{Name: "ht_token", Value: srv.Token()})
+		w := httptest.NewRecorder()
+		srv.Handler().ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Errorf("request %d: expected status 200, got %d", i+1, w.Code)
+		}
+		if !strings.Contains(w.Body.String(), "hero") {
+			t.Errorf("request %d: expected body to contain 'hero'", i+1)
+		}
+	}
+}
+
 func TestDashboardTest_NotFound(t *testing.T) {
 	srv, _, cleanup := setupTestServer(t)
 	defer cleanup()

@@ -98,7 +98,7 @@ func (s *SQLiteStore) Close() error {
 }
 
 func (s *SQLiteStore) CreateTest(ctx context.Context, name string, variants []string, weights []float64, conversionGoal string) (*Test, error) {
-	return s.createTestWithSource(ctx, name, variants, weights, conversionGoal, "server")
+	return s.createTestWithSource(ctx, name, variants, weights, conversionGoal, SourceServer)
 }
 
 func (s *SQLiteStore) createTestWithSource(ctx context.Context, name string, variants []string, weights []float64, conversionGoal string, source string) (*Test, error) {
@@ -288,6 +288,37 @@ func (s *SQLiteStore) GetVariantStats(ctx context.Context, testName string) ([]V
 	return stats, nil
 }
 
+// GetAllVariantStats returns variant stats for all tests in a single query.
+// The result is keyed by test name.
+func (s *SQLiteStore) GetAllVariantStats(ctx context.Context) (map[string][]VariantStats, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT
+			test_name,
+			variant,
+			COUNT(DISTINCT CASE WHEN event_type = 'view' THEN visitor_id END) as views,
+			COUNT(DISTINCT CASE WHEN event_type = 'convert' THEN visitor_id END) as conversions
+		FROM events
+		GROUP BY test_name, variant
+		ORDER BY test_name, variant
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get all variant stats: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[string][]VariantStats)
+	for rows.Next() {
+		var testName string
+		var vs VariantStats
+		if err := rows.Scan(&testName, &vs.Variant, &vs.Views, &vs.Conversions); err != nil {
+			return nil, fmt.Errorf("failed to scan stats: %w", err)
+		}
+		result[testName] = append(result[testName], vs)
+	}
+
+	return result, rows.Err()
+}
+
 func (s *SQLiteStore) GetEvents(ctx context.Context, testName string) ([]*Event, error) {
 	rows, err := s.db.QueryContext(ctx,
 		`SELECT id, test_name, variant, event_type, visitor_id, created_at
@@ -328,7 +359,7 @@ func (s *SQLiteStore) SetWinner(ctx context.Context, testName string, variantInd
 	return s.UpdateTestState(ctx, testName, StateCompleted, &variantIndex)
 }
 
-// GetOrCreateTest returns existing test or creates new one with source="client"
+// GetOrCreateTest returns existing test or creates new one with source=SourceClient
 // Used for auto-creating tests from client data attributes
 // Returns: test, wasCreated, error
 func (s *SQLiteStore) GetOrCreateTest(ctx context.Context, name string, variants []string) (*Test, bool, error) {
@@ -342,7 +373,7 @@ func (s *SQLiteStore) GetOrCreateTest(ctx context.Context, name string, variants
 	}
 
 	// Create new test with source=client
-	test, err = s.createTestWithSource(ctx, name, variants, nil, "", "client")
+	test, err = s.createTestWithSource(ctx, name, variants, nil, "", SourceClient)
 	if err != nil {
 		// Handle race condition - another request may have created it
 		if containsUniqueConstraint(err) {

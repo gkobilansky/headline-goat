@@ -24,6 +24,15 @@ func TestTestState_Constants(t *testing.T) {
 	}
 }
 
+func TestSource_Constants(t *testing.T) {
+	if store.SourceClient != "client" {
+		t.Errorf("got %s, want client", store.SourceClient)
+	}
+	if store.SourceServer != "server" {
+		t.Errorf("got %s, want server", store.SourceServer)
+	}
+}
+
 func TestTest_Struct(t *testing.T) {
 	now := time.Now()
 	winner := 1

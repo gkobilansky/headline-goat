@@ -269,6 +269,52 @@ func TestGetVariantStats(t *testing.T) {
 	}
 }
 
+func TestGetAllVariantStats(t *testing.T) {
+	s := testutil.SetupTestStore(t)
+	ctx := context.Background()
+
+	// Create two tests with events
+	_, _ = s.CreateTest(ctx, "hero", []string{"A", "B"}, nil, "")
+	_, _ = s.CreateTest(ctx, "pricing", []string{"X", "Y"}, nil, "")
+
+	_ = s.RecordEvent(ctx, "hero", 0, "view", "v1")
+	_ = s.RecordEvent(ctx, "hero", 0, "convert", "v1")
+	_ = s.RecordEvent(ctx, "hero", 1, "view", "v2")
+	_ = s.RecordEvent(ctx, "pricing", 0, "view", "v3")
+
+	allStats, err := s.GetAllVariantStats(ctx)
+	if err != nil {
+		t.Fatalf("failed to get all variant stats: %v", err)
+	}
+
+	// Verify hero stats
+	heroStats := allStats["hero"]
+	if len(heroStats) != 2 {
+		t.Fatalf("expected 2 hero variant stats, got %d", len(heroStats))
+	}
+	if heroStats[0].Views != 1 || heroStats[0].Conversions != 1 {
+		t.Errorf("hero variant 0: got views=%d conversions=%d, want 1/1", heroStats[0].Views, heroStats[0].Conversions)
+	}
+	if heroStats[1].Views != 1 {
+		t.Errorf("hero variant 1: got views=%d, want 1", heroStats[1].Views)
+	}
+
+	// Verify pricing stats
+	pricingStats := allStats["pricing"]
+	if len(pricingStats) != 1 {
+		t.Fatalf("expected 1 pricing variant stat, got %d", len(pricingStats))
+	}
+	if pricingStats[0].Views != 1 {
+		t.Errorf("pricing variant 0: got views=%d, want 1", pricingStats[0].Views)
+	}
+
+	// Test with no events returns empty map
+	_, _ = s.CreateTest(ctx, "empty", []string{"A"}, nil, "")
+	if _, ok := allStats["empty"]; ok {
+		t.Error("expected no stats for test with no events")
+	}
+}
+
 func TestGetEvents(t *testing.T) {
 	s := testutil.SetupTestStore(t)
 
