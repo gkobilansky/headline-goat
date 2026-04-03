@@ -38,7 +38,7 @@ func runExport(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid format: must be 'csv' or 'json'")
 	}
 
-	return withStore(func(s *store.SQLiteStore) error {
+	return withStore(func(s store.Store) error {
 		ctx := context.Background()
 
 		// Verify test exists

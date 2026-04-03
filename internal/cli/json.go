@@ -75,7 +75,7 @@ type CreateJSON struct {
 }
 
 // FormatResultsJSON formats test results as JSON
-func FormatResultsJSON(ctx context.Context, s *store.SQLiteStore, testName string) (string, error) {
+func FormatResultsJSON(ctx context.Context, s store.Store, testName string) (string, error) {
 	// Get test
 	test, err := s.GetTest(ctx, testName)
 	if err != nil {
@@ -164,7 +164,7 @@ func FormatResultsJSON(ctx context.Context, s *store.SQLiteStore, testName strin
 }
 
 // FormatListJSON formats the test list as JSON
-func FormatListJSON(ctx context.Context, s *store.SQLiteStore) (string, error) {
+func FormatListJSON(ctx context.Context, s store.Store) (string, error) {
 	tests, err := s.ListTests(ctx)
 	if err != nil {
 		return "", err

@@ -1,12 +1,15 @@
 package server
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
 	"html/template"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gkobilansky/headline-goat/internal/dashboard"
@@ -14,7 +17,7 @@ import (
 )
 
 type Server struct {
-	store     *store.SQLiteStore
+	store     store.Store
 	port      int
 	token     string
 	tokenFile string
@@ -24,7 +27,7 @@ type Server struct {
 	templates map[string]*template.Template
 }
 
-func New(s *store.SQLiteStore, port int, tokenFile string) *Server {
+func New(s store.Store, port int, tokenFile string) *Server {
 	srv := &Server{
 		store:     s,
 		port:      port,
@@ -53,6 +56,7 @@ func (s *Server) setupRoutes() {
 }
 
 // Start writes the token file if configured and begins serving HTTP traffic.
+// It handles SIGINT/SIGTERM for graceful shutdown.
 func (s *Server) Start() error {
 	// Write token to file for OTP command
 	if s.tokenFile != "" {
@@ -61,8 +65,30 @@ func (s *Server) Start() error {
 		}
 	}
 
-	addr := fmt.Sprintf(":%d", s.port)
-	return http.ListenAndServe(addr, s.router)
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", s.port),
+		Handler: s.router,
+	}
+
+	errCh := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
+			errCh <- err
+		}
+		close(errCh)
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case err := <-errCh:
+		return err
+	case <-quit:
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		return srv.Shutdown(ctx)
+	}
 }
 
 func (s *Server) Token() string {
@@ -89,10 +115,9 @@ func (s *Server) parseTemplates() {
 }
 
 func generateToken() string {
-	bytes := make([]byte, 4)
-	if _, err := rand.Read(bytes); err != nil {
-		// Fallback to a simple token if crypto/rand fails
-		return "a1b2c3d4"
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
 	}
-	return hex.EncodeToString(bytes)
+	return hex.EncodeToString(b)
 }

@@ -336,3 +336,42 @@ func TestGetEvents(t *testing.T) {
 		t.Errorf("got %d events, want 2", len(events))
 	}
 }
+
+func TestCountTests(t *testing.T) {
+	s := testutil.SetupTestStore(t)
+	ctx := context.Background()
+
+	// Empty store
+	count, err := s.CountTests(ctx)
+	if err != nil {
+		t.Fatalf("CountTests failed: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("got count %d, want 0", count)
+	}
+
+	// After creating tests
+	s.CreateTest(ctx, "test1", []string{"A", "B"}, nil, "")
+	s.CreateTest(ctx, "test2", []string{"A", "B"}, nil, "")
+
+	count, err = s.CountTests(ctx)
+	if err != nil {
+		t.Fatalf("CountTests failed: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("got count %d, want 2", count)
+	}
+}
+
+func TestDBSizeBytes(t *testing.T) {
+	s := testutil.SetupTestStore(t)
+	ctx := context.Background()
+
+	size, err := s.DBSizeBytes(ctx)
+	if err != nil {
+		t.Fatalf("DBSizeBytes failed: %v", err)
+	}
+	if size <= 0 {
+		t.Errorf("expected positive DB size, got %d", size)
+	}
+}
