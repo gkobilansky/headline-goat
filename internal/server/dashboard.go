@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/gkobilansky/headline-goat/internal/dashboard"
 	"github.com/gkobilansky/headline-goat/internal/stats"
 )
 
@@ -87,10 +86,16 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	allStats, err := s.store.GetAllVariantStats(ctx)
+	if err != nil {
+		http.Error(w, "Failed to load stats", http.StatusInternalServerError)
+		return
+	}
+
 	// Build list items
 	items := make([]testListItem, len(tests))
 	for i, t := range tests {
-		variantStats, _ := s.store.GetVariantStats(ctx, t.Name)
+		variantStats := allStats[t.Name]
 
 		totalViews := 0
 		totalConversions := 0
@@ -219,9 +224,15 @@ func (s *Server) handleDashboardAPI(w http.ResponseWriter, r *http.Request) {
 		Significance   apiSignificance    `json:"significance"`
 	}
 
+	allStats, err := s.store.GetAllVariantStats(ctx)
+	if err != nil {
+		http.Error(w, "Failed to load stats", http.StatusInternalServerError)
+		return
+	}
+
 	apiTests := make([]apiTest, len(tests))
 	for i, t := range tests {
-		variantStats, _ := s.store.GetVariantStats(ctx, t.Name)
+		variantStats := allStats[t.Name]
 		result := stats.Analyze(t, variantStats)
 
 		results := make([]apiVariantResult, len(result.Variants))
@@ -265,53 +276,27 @@ func (s *Server) handleDashboardAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) renderDashboard(w http.ResponseWriter, title, contentTemplate string, data interface{}) {
-	// Load CSS
-	cssBytes, err := dashboard.Assets.ReadFile("assets/style.css")
-	if err != nil {
-		http.Error(w, "Failed to load styles", http.StatusInternalServerError)
+	tmpl := s.templates[contentTemplate]
+	if tmpl == nil {
+		http.Error(w, "Unknown template", http.StatusInternalServerError)
 		return
 	}
 
-	// Load and execute content template
-	contentTmplBytes, err := dashboard.Templates.ReadFile("templates/" + contentTemplate)
-	if err != nil {
-		http.Error(w, "Failed to load template", http.StatusInternalServerError)
-		return
-	}
-
-	contentTmpl, err := template.New("content").Parse(string(contentTmplBytes))
-	if err != nil {
-		http.Error(w, "Failed to parse template", http.StatusInternalServerError)
-		return
-	}
-
+	// Render content portion first
 	var contentBuf bytes.Buffer
-	if err := contentTmpl.Execute(&contentBuf, data); err != nil {
+	if err := tmpl.ExecuteTemplate(&contentBuf, "content", data); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to render template: %v", err), http.StatusInternalServerError)
 		return
 	}
 
-	// Load and execute layout template
-	layoutTmplBytes, err := dashboard.Templates.ReadFile("templates/layout.html")
-	if err != nil {
-		http.Error(w, "Failed to load layout", http.StatusInternalServerError)
-		return
-	}
-
-	layoutTmpl, err := template.New("layout").Parse(string(layoutTmplBytes))
-	if err != nil {
-		http.Error(w, "Failed to parse layout", http.StatusInternalServerError)
-		return
-	}
-
-	layoutData := layoutData{
+	ld := layoutData{
 		Title:   title,
-		CSS:     template.CSS(cssBytes),
+		CSS:     s.css,
 		Content: template.HTML(contentBuf.String()),
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := layoutTmpl.Execute(w, layoutData); err != nil {
+	if err := tmpl.ExecuteTemplate(w, "layout", ld); err != nil {
 		http.Error(w, "Failed to render page", http.StatusInternalServerError)
 		return
 	}

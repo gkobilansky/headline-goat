@@ -48,7 +48,8 @@ func init() {
 }
 
 func runInit(cmd *cobra.Command, args []string) error {
-	// Open database first to check for existing settings
+	// Open store directly instead of using withStore: the store must remain
+	// open for the lifetime of the blocking srv.Start() call.
 	s, err := store.Open(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to open database: %w", err)

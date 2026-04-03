@@ -17,11 +17,6 @@ const (
 	EventConvert = "convert"
 )
 
-// Beacon source identifiers.
-const (
-	SourceClient = "client"
-	SourceServer = "server"
-)
 
 // transparentGIF is a 1x1 transparent GIF pixel (43 bytes).
 var transparentGIF = []byte{
@@ -184,10 +179,10 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 
 	// Default source to client if not specified
 	if req.Source == "" {
-		req.Source = SourceClient
+		req.Source = store.SourceClient
 	}
 
-	if len(req.Variants) > 0 && req.Source == SourceClient {
+	if len(req.Variants) > 0 && req.Source == store.SourceClient {
 		// Auto-create from client data attributes
 		var created bool
 		test, created, err = s.store.GetOrCreateTest(ctx, req.TestName, req.Variants)
@@ -212,7 +207,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check for source conflict (server-created test receiving client beacons)
-	if test.Source == SourceServer && req.Source == SourceClient && !test.HasSourceConflict {
+	if test.Source == store.SourceServer && req.Source == store.SourceClient && !test.HasSourceConflict {
 		// Mark conflict (ignore error, non-critical)
 		_ = s.store.SetSourceConflict(ctx, test.Name, true)
 	}

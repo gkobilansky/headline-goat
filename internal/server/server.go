@@ -4,10 +4,12 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/gkobilansky/headline-goat/internal/dashboard"
 	"github.com/gkobilansky/headline-goat/internal/store"
 )
 
@@ -18,6 +20,8 @@ type Server struct {
 	tokenFile string
 	router    *http.ServeMux
 	startTime time.Time
+	css       template.CSS
+	templates map[string]*template.Template
 }
 
 func New(s *store.SQLiteStore, port int, tokenFile string) *Server {
@@ -30,6 +34,7 @@ func New(s *store.SQLiteStore, port int, tokenFile string) *Server {
 		startTime: time.Now(),
 	}
 
+	srv.parseTemplates()
 	srv.setupRoutes()
 	return srv
 }
@@ -66,6 +71,21 @@ func (s *Server) Token() string {
 
 func (s *Server) Handler() http.Handler {
 	return s.router
+}
+
+func (s *Server) parseTemplates() {
+	cssBytes, _ := dashboard.Assets.ReadFile("assets/style.css")
+	s.css = template.CSS(cssBytes)
+
+	layoutBytes, _ := dashboard.Templates.ReadFile("templates/layout.html")
+
+	s.templates = make(map[string]*template.Template)
+	for _, name := range []string{"list.html", "detail.html"} {
+		contentBytes, _ := dashboard.Templates.ReadFile("templates/" + name)
+		tmpl := template.Must(template.New("layout").Parse(string(layoutBytes)))
+		template.Must(tmpl.New("content").Parse(string(contentBytes)))
+		s.templates[name] = tmpl
+	}
 }
 
 func generateToken() string {

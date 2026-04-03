@@ -9,6 +9,12 @@ const (
 	StateCompleted TestState = "completed"
 )
 
+// Source identifiers for how a test was created.
+const (
+	SourceClient = "client"
+	SourceServer = "server"
+)
+
 type Test struct {
 	ID                int64
 	Name              string
@@ -17,7 +23,7 @@ type Test struct {
 	ConversionGoal    string    // Optional description of what conversion means
 	State             TestState
 	WinnerVariant     *int
-	Source            string // "client" or "server"
+	Source            string // SourceClient or SourceServer
 	HasSourceConflict bool
 	URL               string // For URL-based matching
 	ConversionURL     string // URL-based conversion
