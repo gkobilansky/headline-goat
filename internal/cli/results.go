@@ -30,7 +30,7 @@ func init() {
 func runResults(cmd *cobra.Command, args []string) error {
 	name := args[0]
 
-	return withStore(func(s *store.SQLiteStore) error {
+	return withStore(func(s store.Store) error {
 		ctx := context.Background()
 
 		// JSON output mode
@@ -109,7 +109,7 @@ func runResults(cmd *cobra.Command, args []string) error {
 
 		// Print significance message
 		if len(result.Variants) > 1 {
-			leadingName := result.Variants[result.LeadingVariant].Name
+			leadingName := result.LeadingVariantName()
 			confPct := result.ConfidenceLevel * 100
 
 			if result.Confident {

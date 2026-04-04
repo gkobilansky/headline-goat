@@ -52,7 +52,7 @@ Examples:
 				return fmt.Errorf("use --cta-target OR --conversion-url, not both")
 			}
 
-			return withStore(func(s *store.SQLiteStore) error {
+			return withStore(func(s store.Store) error {
 				ctx := context.Background()
 
 				// Create test

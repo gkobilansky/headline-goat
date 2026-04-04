@@ -1,10 +1,8 @@
 package server
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
@@ -73,31 +71,24 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 
 	// Get test count
-	tests, err := s.store.ListTests(ctx)
+	testCount, err := s.store.CountTests(ctx)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	// Get database size
-	var dbSize int64
-	row := s.store.DB().QueryRow("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
-	if err := row.Scan(&dbSize); err != nil {
-		// Try to get file size as fallback
-		if info, statErr := os.Stat(s.store.DBPath()); statErr == nil {
-			dbSize = info.Size()
-		}
-	}
+	dbSize, _ := s.store.DBSizeBytes(ctx)
 
 	// Calculate uptime
 	uptime := int64(time.Since(s.startTime).Seconds())
 
 	response := HealthResponse{
 		Status:        "ok",
-		TestsCount:    len(tests),
+		TestsCount:    testCount,
 		DBSizeBytes:   dbSize,
 		UptimeSeconds: uptime,
 	}
@@ -171,7 +162,7 @@ func (s *Server) handleBeacon(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 
 	// Get or create test
 	var test *store.Test
@@ -245,7 +236,7 @@ func (s *Server) handleTestsAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	tests, err := s.store.GetTestsByURL(ctx, url)
 	if err != nil {
 		http.Error(w, "Failed to fetch tests", http.StatusInternalServerError)

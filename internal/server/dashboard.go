@@ -2,7 +2,6 @@ package server
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -78,7 +77,7 @@ func (s *Server) handleDashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 
 	tests, err := s.store.ListTests(ctx)
 	if err != nil {
@@ -132,7 +131,7 @@ func (s *Server) handleDashboardTest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 
 	test, err := s.store.GetTest(ctx, name)
 	if err != nil {
@@ -162,10 +161,7 @@ func (s *Server) handleDashboardTest(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	leadingName := ""
-	if len(result.Variants) > 0 {
-		leadingName = result.Variants[result.LeadingVariant].Name
-	}
+	leadingName := result.LeadingVariantName()
 
 	data := detailData{
 		Test: testDetailItem{
@@ -189,7 +185,7 @@ func (s *Server) handleDashboardTest(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDashboardAPI(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+	ctx := r.Context()
 
 	tests, err := s.store.ListTests(ctx)
 	if err != nil {
@@ -248,10 +244,7 @@ func (s *Server) handleDashboardAPI(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		leadingName := ""
-		if len(result.Variants) > 0 {
-			leadingName = result.Variants[result.LeadingVariant].Name
-		}
+		leadingName := result.LeadingVariantName()
 
 		apiTests[i] = apiTest{
 			Name:           t.Name,

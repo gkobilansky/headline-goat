@@ -27,7 +27,7 @@ Example:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			testName := args[0]
 
-			return withStore(func(s *store.SQLiteStore) error {
+			return withStore(func(s store.Store) error {
 				ctx := context.Background()
 				test, err := s.GetTest(ctx, testName)
 				if err != nil {

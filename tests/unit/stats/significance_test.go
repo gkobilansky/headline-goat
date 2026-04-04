@@ -159,3 +159,42 @@ func TestAnalyze_VariantNames(t *testing.T) {
 		t.Errorf("expected variant 1 name 'Build Better', got '%s'", result.Variants[1].Name)
 	}
 }
+
+func TestResult_LeadingVariantName(t *testing.T) {
+	tests := []struct {
+		name     string
+		result   stats.Result
+		expected string
+	}{
+		{
+			name:     "empty variants",
+			result:   stats.Result{Variants: nil, LeadingVariant: 0},
+			expected: "",
+		},
+		{
+			name: "valid leading variant",
+			result: stats.Result{
+				Variants:       []stats.VariantResult{{Name: "A"}, {Name: "B"}},
+				LeadingVariant: 1,
+			},
+			expected: "B",
+		},
+		{
+			name: "out of bounds index",
+			result: stats.Result{
+				Variants:       []stats.VariantResult{{Name: "A"}},
+				LeadingVariant: 5,
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := tt.result.LeadingVariantName()
+			if got != tt.expected {
+				t.Errorf("LeadingVariantName() = %q, want %q", got, tt.expected)
+			}
+		})
+	}
+}

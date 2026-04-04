@@ -25,6 +25,15 @@ type VariantResult struct {
 	CIUpper     float64
 }
 
+// LeadingVariantName returns the name of the leading variant, or "" if there are no variants
+// or the index is out of bounds.
+func (r *Result) LeadingVariantName() string {
+	if len(r.Variants) > 0 && r.LeadingVariant < len(r.Variants) {
+		return r.Variants[r.LeadingVariant].Name
+	}
+	return ""
+}
+
 // SignificanceTest performs a two-proportion z-test.
 // Returns confidence level (0-1) that variant A beats variant B.
 func SignificanceTest(aConv, aViews, bConv, bViews int) float64 {

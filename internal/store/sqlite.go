@@ -14,6 +14,11 @@ import (
 
 var ErrNotFound = errors.New("not found")
 
+// testColumns lists the columns returned by scanTest. Keep in sync with scanTest().
+const testColumns = `id, name, variants, weights, conversion_goal, state, winner_variant,
+	source, has_source_conflict, url, conversion_url, target, cta_target,
+	created_at, updated_at`
+
 type SQLiteStore struct {
 	db     *sql.DB
 	dbPath string
@@ -145,10 +150,7 @@ func (s *SQLiteStore) createTestWithSource(ctx context.Context, name string, var
 
 func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
 	row := s.db.QueryRowContext(ctx,
-		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
-		        source, has_source_conflict, url, conversion_url, target, cta_target,
-		        created_at, updated_at
-		 FROM tests WHERE name = ?`, name,
+		`SELECT `+testColumns+` FROM tests WHERE name = ?`, name,
 	)
 
 	test, err := scanTest(row)
@@ -164,10 +166,7 @@ func (s *SQLiteStore) GetTest(ctx context.Context, name string) (*Test, error) {
 
 func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
-		        source, has_source_conflict, url, conversion_url, target, cta_target,
-		        created_at, updated_at
-		 FROM tests ORDER BY created_at DESC`,
+		`SELECT `+testColumns+` FROM tests ORDER BY created_at DESC`,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tests: %w", err)
@@ -183,7 +182,7 @@ func (s *SQLiteStore) ListTests(ctx context.Context) ([]*Test, error) {
 		tests = append(tests, test)
 	}
 
-	return tests, nil
+	return tests, rows.Err()
 }
 
 func (s *SQLiteStore) UpdateTestState(ctx context.Context, name string, state TestState, winnerVariant *int) error {
@@ -221,13 +220,17 @@ func (s *SQLiteStore) UpdateTestState(ctx context.Context, name string, state Te
 }
 
 func (s *SQLiteStore) DeleteTest(ctx context.Context, name string) error {
-	// First delete related events
-	_, err := s.db.ExecContext(ctx, `DELETE FROM events WHERE test_name = ?`, name)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	if _, err := tx.ExecContext(ctx, `DELETE FROM events WHERE test_name = ?`, name); err != nil {
 		return fmt.Errorf("failed to delete events: %w", err)
 	}
 
-	result, err := s.db.ExecContext(ctx, `DELETE FROM tests WHERE name = ?`, name)
+	result, err := tx.ExecContext(ctx, `DELETE FROM tests WHERE name = ?`, name)
 	if err != nil {
 		return fmt.Errorf("failed to delete test: %w", err)
 	}
@@ -241,7 +244,7 @@ func (s *SQLiteStore) DeleteTest(ctx context.Context, name string) error {
 		return ErrNotFound
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (s *SQLiteStore) RecordEvent(ctx context.Context, testName string, variant int, eventType string, visitorID string) error {
@@ -285,7 +288,7 @@ func (s *SQLiteStore) GetVariantStats(ctx context.Context, testName string) ([]V
 		stats = append(stats, s)
 	}
 
-	return stats, nil
+	return stats, rows.Err()
 }
 
 // GetAllVariantStats returns variant stats for all tests in a single query.
@@ -341,17 +344,27 @@ func (s *SQLiteStore) GetEvents(ctx context.Context, testName string) ([]*Event,
 		events = append(events, &e)
 	}
 
-	return events, nil
+	return events, rows.Err()
 }
 
-// DB returns the underlying database connection for health checks
-func (s *SQLiteStore) DB() *sql.DB {
-	return s.db
+// CountTests returns the number of tests without loading them all.
+func (s *SQLiteStore) CountTests(ctx context.Context) (int, error) {
+	var count int
+	err := s.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM tests`).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count tests: %w", err)
+	}
+	return count, nil
 }
 
-// DBPath returns the path to the database file
-func (s *SQLiteStore) DBPath() string {
-	return s.dbPath
+// DBSizeBytes returns the database file size in bytes.
+func (s *SQLiteStore) DBSizeBytes(ctx context.Context) (int64, error) {
+	var size int64
+	err := s.db.QueryRowContext(ctx, `SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()`).Scan(&size)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get db size: %w", err)
+	}
+	return size, nil
 }
 
 // SetWinner marks a test as completed with the specified winning variant
@@ -427,11 +440,7 @@ func (s *SQLiteStore) SetSourceConflict(ctx context.Context, name string, hasCon
 // GetTestsByURL returns all running tests matching a URL
 func (s *SQLiteStore) GetTestsByURL(ctx context.Context, url string) ([]*Test, error) {
 	rows, err := s.db.QueryContext(ctx,
-		`SELECT id, name, variants, weights, conversion_goal, state, winner_variant,
-		        source, has_source_conflict, url, conversion_url, target, cta_target,
-		        created_at, updated_at
-		 FROM tests
-		 WHERE url = ? AND state = 'running'`,
+		`SELECT `+testColumns+` FROM tests WHERE url = ? AND state = 'running'`,
 		url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query tests by URL: %w", err)
@@ -491,7 +500,11 @@ type scanner interface {
 	Scan(dest ...interface{}) error
 }
 
-// scanTest scans a test row and unmarshals JSON fields
+// scanTest scans a test row and unmarshals JSON fields.
+// Column order must match testColumns constant:
+// id, name, variants, weights, conversion_goal, state, winner_variant,
+// source, has_source_conflict, url, conversion_url, target, cta_target,
+// created_at, updated_at
 func scanTest(s scanner) (*Test, error) {
 	var test Test
 	var variantsJSON string
