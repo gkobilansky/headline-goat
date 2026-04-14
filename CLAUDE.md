@@ -95,6 +95,31 @@ hlg list --json
 hlg create hero --variants "A,B" --json
 ```
 
+### Remote Mode (SSH dispatch)
+
+Data commands (`list`, `results`, `create`, `winner`, `export`, `token`) can
+run against a remote `hlg` server over SSH. This is the recommended way to
+drive a deployed VPS from your local machine without ever opening an
+interactive SSH session.
+
+Activation (first match wins):
+1. `HLG_REMOTE=user@host[:port]` env var
+2. `hlg.json` in the current repo (walked up from cwd, like `.git`)
+3. `~/.hlg/config.json` global default
+
+Flags:
+- `--remote` force remote (errors if no config is discoverable)
+- `--local` force local even if `hlg.json` is present
+
+Example `hlg.json` (safe to commit — no secrets):
+```json
+{"host": "hlg.yourdomain.com", "user": "hlg"}
+```
+
+Under the hood, `hlg <cmd> <args>` becomes `ssh user@host 'hlg <cmd> <args>'`
+with stdio streamed through. Authentication is handled by your existing SSH
+agent / `~/.ssh/config`.
+
 JSON output includes:
 - Test metadata (name, state, variants)
 - Per-variant stats (views, conversions, rate, confidence intervals)
