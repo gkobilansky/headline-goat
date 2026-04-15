@@ -95,6 +95,28 @@ hlg list --json
 hlg create hero --variants "A,B" --json
 ```
 
+### Provisioning a VPS
+
+`hlg deploy` provisions a fresh VPS and installs hlg as a systemd service.
+It uses your authenticated provider CLI — no separate API tokens needed:
+
+```bash
+hlg deploy                       # auto-picks if only doctl or hcloud is authenticated
+hlg deploy --provider hetzner    # explicit when both are authenticated
+hlg deploy --size cpx21 --region hel1
+hlg deploy --yes                 # skip confirmation prompts (CI/scripts)
+```
+
+Prereqs (install one):
+- DigitalOcean: [doctl](https://docs.digitalocean.com/reference/doctl/how-to/install/) + `doctl auth init`
+- Hetzner Cloud: [hcloud](https://github.com/hetznercloud/cli) + `hcloud context create <name>`
+
+The deploy flow:
+1. Picks your local SSH pubkey (`~/.ssh/id_ed25519.pub` preferred)
+2. Checks if it's registered with the provider; if not, asks once to upload it
+3. Creates the VM, installs `hlg` binary + systemd unit via cloud-init
+4. Writes `~/.hlg/config.json` so `hlg list`, `hlg results`, etc. work immediately
+
 ### Remote Mode (SSH dispatch)
 
 Data commands (`list`, `results`, `create`, `winner`, `export`, `token`) can

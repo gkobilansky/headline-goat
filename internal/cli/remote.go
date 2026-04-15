@@ -17,6 +17,12 @@ type Remote struct {
 	User     string `json:"user,omitempty"`
 	Port     int    `json:"port,omitempty"`
 	Identity string `json:"identity,omitempty"` // private key path (ssh -i)
+
+	// Populated by `hlg deploy`. Not used for SSH dispatch; here so future
+	// lifecycle commands (destroy, status) can target the underlying VM
+	// without a separate state file.
+	Provider string `json:"provider,omitempty"`
+	VMID     string `json:"vm_id,omitempty"`
 }
 
 const (
