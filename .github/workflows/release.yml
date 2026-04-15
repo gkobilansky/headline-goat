@@ -1,14 +1,31 @@
 name: Release
 
+# Triggered by `git push --tags` when the tag starts with "v".
+# Example: `git tag v0.1.0 && git push origin v0.1.0`
 on:
-  release:
-    types: [created]
+  push:
+    tags: ['v*']
 
 permissions:
   contents: write
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.0'
+
+      - name: Run tests
+        run: go test ./... -race
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -29,7 +46,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.24.0'
 
       - name: Build binary
         env:
@@ -38,7 +55,8 @@ jobs:
         run: |
           go build -ldflags="-s -w" -o hlg-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/hlg
 
-      - name: Upload release asset
-        uses: softprops/action-gh-release@v1
+      - name: Publish release asset
+        uses: softprops/action-gh-release@v2
         with:
           files: hlg-${{ matrix.goos }}-${{ matrix.goarch }}
+          generate_release_notes: true
