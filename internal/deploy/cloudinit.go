@@ -5,14 +5,13 @@ import (
 	"strings"
 )
 
-// DefaultReleaseURL points at the latest linux/amd64 release binary.
-// TODO: gate to a specific tag once releases are stable.
+// TODO: gate to a specific tag once releases are stable — /latest/ will
+// silently upgrade existing VMs' reinstalls to whatever ships next.
 const DefaultReleaseURL = "https://github.com/gkobilansky/headline-goat/releases/latest/download/hlg-linux-amd64"
 
-// CloudInitOpts configures the generated cloud-init script.
 type CloudInitOpts struct {
-	ReleaseURL string // URL to download the hlg binary from
-	Port       int    // listening port (defaults to 8080 if zero)
+	ReleaseURL string
+	Port       int // defaults to 8080 if zero
 }
 
 // GenerateCloudInit returns a cloud-init user-data YAML script that:

@@ -76,7 +76,6 @@ func ComputeFingerprintMD5(pubkey string) (string, error) {
 	}
 	sum := md5.Sum(blob)
 	hex := hex.EncodeToString(sum[:])
-	// Insert colons every 2 chars.
 	var b strings.Builder
 	for i := 0; i < len(hex); i += 2 {
 		if i > 0 {

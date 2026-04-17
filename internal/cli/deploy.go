@@ -1,9 +1,9 @@
 package cli
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/gkobilansky/headline-goat/internal/deploy"
+	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 var deployCmd = &cobra.Command{
@@ -27,8 +27,6 @@ are authenticated, pass --provider to choose.
 
 You will be prompted to confirm uploading your local SSH pubkey if it's
 not already registered with the chosen provider.`,
-	// Don't dump the flag usage on runtime errors (missing CLIs, network
-	// failures, etc.) — those aren't misuse.
 	SilenceUsage: true,
 	RunE:         runDeploy,
 }
@@ -70,7 +68,6 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("Using provider: %s\n", p.Name())
 
-	// Local pubkey discovery.
 	keyPath, err := deploy.FindLocalPubkey(deployOpts.sshKey)
 	if err != nil {
 		return err
@@ -85,7 +82,6 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("Using SSH key: %s (%s)\n", keyPath, fingerprint)
 
-	// Ensure the key is registered with the provider.
 	has, err := p.HasSSHKey(ctx, fingerprint)
 	if err != nil {
 		return err
@@ -93,9 +89,16 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	if !has {
 		keyName := fmt.Sprintf("hlg-%s", hostname())
 		if !deployOpts.yes {
-			prompt := fmt.Sprintf("Pubkey %s is not registered with %s. Upload it as %q?", keyPath, p.Name(), keyName)
-			if !confirm(prompt, true) {
-				return fmt.Errorf("aborted by user")
+			prompt := promptui.Prompt{
+				Label:     fmt.Sprintf("Upload %s to %s as %q", keyPath, p.Name(), keyName),
+				IsConfirm: true,
+				Default:   "y",
+			}
+			if _, err := prompt.Run(); err != nil {
+				if errors.Is(err, promptui.ErrAbort) {
+					return fmt.Errorf("aborted by user")
+				}
+				return err
 			}
 		}
 		newFP, err := p.UploadSSHKey(ctx, keyName, pubkey)
@@ -106,7 +109,6 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		fingerprint = newFP
 	}
 
-	// Build VM opts.
 	name := deployOpts.name
 	if name == "" {
 		name = fmt.Sprintf("hlg-%d", time.Now().Unix())
@@ -128,7 +130,6 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	// Persist so subsequent hlg commands dispatch over SSH automatically.
 	if err := writeRemoteConfig(dep); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: failed to write ~/.hlg/config.json: %v\n", err)
 	}
@@ -144,9 +145,6 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// writeRemoteConfig persists the deployment to ~/.hlg/config.json so the
-// remote-dispatch logic in Execute() picks it up. Extra fields (provider,
-// vm_id) are ignored by SSH dispatch but used by future lifecycle commands.
 func writeRemoteConfig(d *deploy.Deployment) error {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -170,34 +168,13 @@ func writeRemoteConfig(d *deploy.Deployment) error {
 	return os.WriteFile(filepath.Join(dir, "config.json"), data, 0600)
 }
 
-// confirm prompts on stdin. In non-interactive environments returns def.
-func confirm(prompt string, def bool) bool {
-	if !term.IsTerminal(int(os.Stdin.Fd())) {
-		return def
-	}
-	suffix := " [Y/n] "
-	if !def {
-		suffix = " [y/N] "
-	}
-	fmt.Print(prompt + suffix)
-	reader := bufio.NewReader(os.Stdin)
-	line, err := reader.ReadString('\n')
-	if err != nil {
-		return def
-	}
-	ans := strings.ToLower(strings.TrimSpace(line))
-	if ans == "" {
-		return def
-	}
-	return ans == "y" || ans == "yes"
-}
-
+// hostname returns os.Hostname with non-alphanum chars replaced by '-',
+// since cloud provider SSH key names forbid dots and most punctuation.
 func hostname() string {
 	h, err := os.Hostname()
 	if err != nil || h == "" {
 		return "deploy"
 	}
-	// Cloud provider key names often forbid dots and non-alphanum.
 	var b strings.Builder
 	for _, r := range h {
 		switch {

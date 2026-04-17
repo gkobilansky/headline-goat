@@ -2,12 +2,16 @@ package cli
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	shellquote "github.com/kballard/go-shellquote"
 )
 
 // Remote describes how to reach a headline-goat server over SSH.
@@ -129,9 +133,11 @@ func resolveRemoteFrom(cwd, envVal string) (*Remote, error) {
 	}
 
 	if gp := globalConfigFile(); gp != "" {
-		if _, err := os.Stat(gp); err == nil {
-			return loadRemoteConfig(gp)
+		r, err := loadRemoteConfig(gp)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
 		}
+		return r, err
 	}
 
 	return nil, nil
@@ -155,36 +161,8 @@ func buildSSHArgs(r *Remote, hlgArgs []string) []string {
 	}
 	args = append(args, target)
 
-	parts := make([]string, 0, len(hlgArgs)+1)
-	parts = append(parts, "hlg")
-	for _, a := range hlgArgs {
-		parts = append(parts, shellQuote(a))
-	}
-	args = append(args, strings.Join(parts, " "))
+	args = append(args, shellquote.Join(append([]string{"hlg"}, hlgArgs...)...))
 	return args
-}
-
-// shellQuote returns a POSIX-shell-safe form of s. Most args pass through
-// unchanged; anything with shell metachars gets single-quoted.
-func shellQuote(s string) string {
-	if s == "" {
-		return "''"
-	}
-	// Fast path: no quoting needed.
-	safe := true
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if !(c == '-' || c == '_' || c == '.' || c == '/' || c == ',' || c == '=' || c == ':' || c == '+' ||
-			(c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) {
-			safe = false
-			break
-		}
-	}
-	if safe {
-		return s
-	}
-	// Single-quote, escape embedded single quotes as '\''
-	return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'"
 }
 
 // stripRemoteFlags removes --remote/--local (and --remote=... / --local=...)

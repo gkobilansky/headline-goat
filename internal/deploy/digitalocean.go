@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
 	"strings"
 )
@@ -13,8 +12,6 @@ import (
 // requiring doctl/hcloud to be installed.
 type runner func(ctx context.Context, name string, args ...string) ([]byte, error)
 
-// execRunner is the production runner. Uses CombinedOutput so callers get
-// stderr messages on failure (doctl's errors are on stderr).
 func execRunner(ctx context.Context, name string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
 	out, err := cmd.Output()
@@ -27,28 +24,25 @@ func execRunner(ctx context.Context, name string, args ...string) ([]byte, error
 	return out, nil
 }
 
-// DOProvider creates DigitalOcean droplets via the doctl CLI.
 type DOProvider struct {
 	run runner
 }
 
 func NewDO() *DOProvider { return &DOProvider{run: execRunner} }
 
-func (*DOProvider) Name() string { return "do" }
+func (*DOProvider) Name() string { return ProviderDO }
 
 func (p *DOProvider) Available(ctx context.Context) bool {
 	_, err := p.run(ctx, "doctl", "account", "get", "-o", "json")
 	return err == nil
 }
 
-// doSSHKey mirrors the subset of doctl's ssh-key JSON output we care about.
 type doSSHKey struct {
 	ID          int    `json:"id"`
 	Fingerprint string `json:"fingerprint"`
 	Name        string `json:"name"`
 }
 
-// HasSSHKey checks if a key with the given MD5 fingerprint is registered.
 func (p *DOProvider) HasSSHKey(ctx context.Context, fingerprint string) (bool, error) {
 	out, err := p.run(ctx, "doctl", "compute", "ssh-key", "list", "-o", "json")
 	if err != nil {
@@ -66,26 +60,19 @@ func (p *DOProvider) HasSSHKey(ctx context.Context, fingerprint string) (bool, e
 	return false, nil
 }
 
-// UploadSSHKey imports a pubkey into the DO account. Writes the pubkey to a
-// temp file because doctl's import subcommand requires --public-key-file.
 func (p *DOProvider) UploadSSHKey(ctx context.Context, name, pubkey string) (string, error) {
-	f, err := os.CreateTemp("", "hlg-pubkey-*.pub")
+	path, cleanup, err := writeTempFile("hlg-pubkey-*.pub", pubkey+"\n")
 	if err != nil {
-		return "", fmt.Errorf("tempfile: %w", err)
-	}
-	defer os.Remove(f.Name())
-	if _, err := f.WriteString(pubkey + "\n"); err != nil {
-		f.Close()
 		return "", err
 	}
-	f.Close()
+	defer cleanup()
 
 	out, err := p.run(ctx, "doctl", "compute", "ssh-key", "import", name,
-		"--public-key-file", f.Name(), "-o", "json")
+		"--public-key-file", path, "-o", "json")
 	if err != nil {
 		return "", fmt.Errorf("import ssh key: %w", err)
 	}
-	// doctl returns an array even for single-key output.
+	// doctl wraps even a single result in an array.
 	var keys []doSSHKey
 	if err := json.Unmarshal(out, &keys); err != nil {
 		return "", fmt.Errorf("parse import output: %w", err)
@@ -96,7 +83,6 @@ func (p *DOProvider) UploadSSHKey(ctx context.Context, name, pubkey string) (str
 	return keys[0].Fingerprint, nil
 }
 
-// doDroplet mirrors the relevant subset of doctl's droplet JSON.
 type doDroplet struct {
 	ID       int    `json:"id"`
 	Name     string `json:"name"`
@@ -104,28 +90,21 @@ type doDroplet struct {
 	Networks struct {
 		V4 []struct {
 			IPAddress string `json:"ip_address"`
-			Type      string `json:"type"` // "public" or "private"
+			Type      string `json:"type"`
 		} `json:"v4"`
 	} `json:"networks"`
 }
 
-// Deploy creates a droplet and blocks until DO reports it active (--wait).
-// Returns the public IPv4 address.
 func (p *DOProvider) Deploy(ctx context.Context, opts DeployOpts) (*Deployment, error) {
 	region := firstNonEmpty(opts.Region, "nyc1")
 	size := firstNonEmpty(opts.Size, "s-1vcpu-1gb")
 	image := firstNonEmpty(opts.Image, "ubuntu-22-04-x64")
 
-	userDataFile, err := os.CreateTemp("", "hlg-userdata-*.yaml")
+	userDataPath, cleanup, err := writeTempFile("hlg-userdata-*.yaml", opts.UserData)
 	if err != nil {
-		return nil, fmt.Errorf("tempfile: %w", err)
-	}
-	defer os.Remove(userDataFile.Name())
-	if _, err := userDataFile.WriteString(opts.UserData); err != nil {
-		userDataFile.Close()
 		return nil, err
 	}
-	userDataFile.Close()
+	defer cleanup()
 
 	args := []string{
 		"compute", "droplet", "create", opts.Name,
@@ -133,7 +112,7 @@ func (p *DOProvider) Deploy(ctx context.Context, opts DeployOpts) (*Deployment, 
 		"--size", size,
 		"--image", image,
 		"--ssh-keys", opts.SSHKeyFP,
-		"--user-data-file", userDataFile.Name(),
+		"--user-data-file", userDataPath,
 		"--wait",
 		"-o", "json",
 	}
@@ -164,18 +143,11 @@ func (p *DOProvider) Deploy(ctx context.Context, opts DeployOpts) (*Deployment, 
 	}
 
 	return &Deployment{
-		Provider: "do",
+		Provider: ProviderDO,
 		VMID:     fmt.Sprintf("%d", d.ID),
 		Host:     ip,
 		User:     "hlg",
 		Region:   region,
 		Size:     size,
 	}, nil
-}
-
-func firstNonEmpty(a, b string) string {
-	if a != "" {
-		return a
-	}
-	return b
 }

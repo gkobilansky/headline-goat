@@ -132,6 +132,37 @@ func TestHetzner_Deploy_FingerprintNotRegistered(t *testing.T) {
 	}
 }
 
+func TestHetzner_HasSSHKeyThenDeploy_SingleListCall(t *testing.T) {
+	listJSON := `[{"id":7,"name":"my-laptop","fingerprint":"aa:bb:cc"}]`
+	createJSON := `{"server":{"id":1,"public_net":{"ipv4":{"ip":"1.1.1.1"}}}}`
+
+	f := &fakeRunner{responses: map[string]fakeResponse{
+		"hcloud ssh-key list":  {stdout: []byte(listJSON)},
+		"hcloud server create": {stdout: []byte(createJSON)},
+	}}
+	p := &HetznerProvider{run: f.run}
+
+	if _, err := p.HasSSHKey(context.Background(), "aa:bb:cc"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := p.Deploy(context.Background(), DeployOpts{
+		Name: "hlg", SSHKeyFP: "aa:bb:cc",
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	// The cache set up by HasSSHKey must let Deploy skip a second ssh-key list.
+	listCalls := 0
+	for _, c := range f.calls {
+		if len(c.args) >= 2 && c.args[0] == "ssh-key" && c.args[1] == "list" {
+			listCalls++
+		}
+	}
+	if listCalls != 1 {
+		t.Errorf("expected 1 ssh-key list call (cache reused), got %d", listCalls)
+	}
+}
+
 func TestHetzner_Deploy_UsesCustomValues(t *testing.T) {
 	listJSON := `[{"id":1,"name":"k","fingerprint":"x"}]`
 	createJSON := `{"server":{"id":1,"public_net":{"ipv4":{"ip":"1.1.1.1"}}}}`

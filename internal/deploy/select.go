@@ -6,11 +6,9 @@ import (
 	"strings"
 )
 
-// installInstruction returns a short, actionable hint for each provider's
-// CLI (what to install and how to authenticate). Keyed by Provider.Name().
 var installInstruction = map[string]string{
-	"do":      "install doctl and run `doctl auth init` (https://docs.digitalocean.com/reference/doctl/how-to/install/)",
-	"hetzner": "install hcloud and run `hcloud context create <name>` (https://github.com/hetznercloud/cli)",
+	ProviderDO:      "install doctl and run `doctl auth init` (https://docs.digitalocean.com/reference/doctl/how-to/install/)",
+	ProviderHetzner: "install hcloud and run `hcloud context create <name>` (https://github.com/hetznercloud/cli)",
 }
 
 // SelectProvider chooses a Provider based on an optional explicit name and
