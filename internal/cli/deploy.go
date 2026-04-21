@@ -95,7 +95,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 				Default:   "y",
 			}
 			if _, err := prompt.Run(); err != nil {
-				if errors.Is(err, promptui.ErrAbort) {
+				if errors.Is(err, promptui.ErrAbort) || errors.Is(err, promptui.ErrInterrupt) {
 					return fmt.Errorf("aborted by user")
 				}
 				return err
