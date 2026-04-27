@@ -95,6 +95,53 @@ hlg list --json
 hlg create hero --variants "A,B" --json
 ```
 
+### Provisioning a VPS
+
+`hlg deploy` provisions a fresh VPS and installs hlg as a systemd service.
+It uses your authenticated provider CLI — no separate API tokens needed:
+
+```bash
+hlg deploy                       # auto-picks if only doctl or hcloud is authenticated
+hlg deploy --provider hetzner    # explicit when both are authenticated
+hlg deploy --size cpx21 --region hel1
+hlg deploy --yes                 # skip confirmation prompts (CI/scripts)
+```
+
+Prereqs (install one):
+- DigitalOcean: [doctl](https://docs.digitalocean.com/reference/doctl/how-to/install/) + `doctl auth init`
+- Hetzner Cloud: [hcloud](https://github.com/hetznercloud/cli) + `hcloud context create <name>`
+
+The deploy flow:
+1. Picks your local SSH pubkey (`~/.ssh/id_ed25519.pub` preferred)
+2. Checks if it's registered with the provider; if not, asks once to upload it
+3. Creates the VM, installs `hlg` binary + systemd unit via cloud-init
+4. Writes `~/.hlg/config.json` so `hlg list`, `hlg results`, etc. work immediately
+
+### Remote Mode (SSH dispatch)
+
+Data commands (`list`, `results`, `create`, `winner`, `export`, `token`) can
+run against a remote `hlg` server over SSH. This is the recommended way to
+drive a deployed VPS from your local machine without ever opening an
+interactive SSH session.
+
+Activation (first match wins):
+1. `HLG_REMOTE=user@host[:port]` env var
+2. `hlg.json` in the current repo (walked up from cwd, like `.git`)
+3. `~/.hlg/config.json` global default
+
+Flags:
+- `--remote` force remote (errors if no config is discoverable)
+- `--local` force local even if `hlg.json` is present
+
+Example `hlg.json` (safe to commit — no secrets):
+```json
+{"host": "hlg.yourdomain.com", "user": "hlg"}
+```
+
+Under the hood, `hlg <cmd> <args>` becomes `ssh user@host 'hlg <cmd> <args>'`
+with stdio streamed through. Authentication is handled by your existing SSH
+agent / `~/.ssh/config`.
+
 JSON output includes:
 - Test metadata (name, state, variants)
 - Per-variant stats (views, conversions, rate, confidence intervals)
